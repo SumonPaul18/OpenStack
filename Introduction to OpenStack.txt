@@ -1,0 +1,113 @@
+
+## OpenStack কি, কেনো, কিভাবে কাজ করে তা আলোচনা করবো , আমি সুমন পাল আর আপনারা দেখছেন Cloud Engineer Youtube Channel। 
+ 
+1# ওপেনস্ট্যাক কিঃ
+
+ওপেনস্ট্যাক কি জানতে হলে খুব ভালো হবে যদি আপনি ক্লাউড কম্পিউটিং কি জেনে থাকেন। মূলত,
+ওপেনস্ট্যাক একটি ক্লাউড অপারেটিং সিস্টেম অথবা ক্লাউড কম্পিউটিং সিস্টেম। এটি অনেকগুলো কম্পিউটার হার্ডওয়্যার যেমন সিপিউ, র‍্যাম, স্টোরেজ, নেটওয়ার্ক ইত্যাদি একত্রিত করে একটি ক্লাউড কম্পিউটিং প্লার্টফর্ম তৈরি করে । ওপেনস্ট্যাক ফ্রি এবং পাবলিক ও প্রাইভেট ক্লাউড তৈরি করার একটি অন্যতম মাধ্যম।
+
+২০১০ সালে Rackspace Hosting এবং NASA এই OpenSource Cloud Software এই OpenStack এর নাম প্রকাশ করে।  তাদের উদ্দেশ্য ছিল এমন একটি OpenSource Cloud Computing Platform তৈরি করা যা দিয়ে সহজে Public and Private Cloud তৈরি করা যাবে এবং ব্যাপকভাবে কম্পিউটিং রির্সোস বৃদ্ধি করা যাবে। 
+
+2# ওপেনস্ট্যাক কেনোঃ
+
+আমরা সকলেই জানি ক্লাউড কম্পিউটিং কি। কয়েকটি জনপ্রিয় Cloud Service Provider যেমনঃ AWS, GCP, Azure এবং অন্যান্য alibaba cloud, DigitalOcean এই সমস্ত সাইট গুলোতে যেমন Registration করে Credit Card ব্যবহার করে Cloud Service ব্যবহার করতে পারি। ওপেনস্ট্যাক ব্যবহার করেও ঐ রকম Cloud Service ব্যবহার করতে পারবো এবং Provider হিসাবে কাজ করতে পারবো। 
+
+
+3# ওপেনস্ট্যাক কিভাবে কাজ করেঃ
+
+ওপেনস্ট্যাক কিভাবে কাজ করে জানতে হলে আমাদের আগে জানতে হবে OpenStack এর নামের অর্থ (Open মানে উন্মুক্ত এবং Stack মানে স্তুপ বা সারি বা তালিকা ) তাহলে আমরা বলতে পারি যে অনেকগুলো Open Source বা ফ্রী Software বা Services একত্রিত করে এক বা একাধিক সার্ভিস বা সেবা পাওয়া যায়। এজন্যই এটির নাম ওপেনস্ট্যাক বলতে পারি। 
+
+ওপেনস্ট্যাক শুধুমাত্র একটি নাম। অনেকগুলো কম্পোনেন্ট বা  Software মিলে এই ওপেনস্ট্যাক ক্লাউড অপারেটিং সিস্টেম তৈরি হয়। 
+
+4# OpenStack Services অনুযায়ী কম্পোনেন্ট গুলো  বিভক্ত করা হয়েছে, যেমনঃ
+
+1. Compute
+
+NOVA		-	Compute Service
+ZUN		-	Containers Service
+
+2. Hardware Lifecycle
+
+IRONIC		-	Bare Metal Provisioning Service
+CYBORG		-	Lifecycle management of accelerators
+
+3. Storage
+
+SWIFT		-	Object store
+CINDER		-	Block Storage
+MANILA		-	Shared filesystems
+
+4. Networking
+
+NEUTRON		-	Networking
+OCTAVIA		-	Load balancer
+DESIGNATE	-	DNS service
+
+5. Shared Services
+
+KEYSTONE	-	Identity service
+PLACEMENT	-	Placement service
+GLANCE		-	Image service
+BARBICAN	-	Key management
+
+6. Orchestration
+
+HEAT		-	Orchestration
+SENLIN		-	Clustering service
+MISTRAL		-	Workflow service
+ZAQAR		-	Messaging Service
+BLAZAR		-	Resource reservation service
+AODH		-	Alarming Service
+
+7. Workload Provisioning
+
+MAGNUM		-	Container Orchestration Engine Provisioning
+SAHARA		-	Big Data Processing Framework Provisioning
+TROVE		-	Database as a Service
+
+8. Application Lifecycle
+
+MASAKARI	-	Instances High Availability Service
+MURANO		-	Application Catalog
+SOLUM		-	Software Development Lifecycle Automation
+FREEZER		-	Backup, Restore, and Disaster Recovery
+
+9. API Proxies
+
+EC2API		-	EC2 API proxy
+
+10. Web frontends
+
+HORIZON		-	Dashboard
+SKYLINE		-	Next generation dashboard (emerging technology)
+
+
+5# ওপেনস্ট্যাকের ব্যবহারঃ
+
+OpenStack ব্যবহার করে আমরা Public এবং Private Cloud তৈরি  করতে পারবো। উদাহরনের মাধ্যমে বুঝিঃ একটি প্রতিষ্ঠান বা কোম্পানী পরিচালনা করার জন্য Employee Management System (EMS) Application, Websites, Mail Server, Database, ERP, File server এবং আরো অন্যান্য সার্ভিস ব্যবহার করতে পারে। এই প্রত্যেকটি service use করার জন্য আলাদা-আলাদা Server এর প্রয়োজন হয় আবার একটি সার্ভারেও  করা যায়। 
+
+এখন এই সার্ভিসগুলো চালানোর কয়েকটি মাধ্যম আছে যেমনঃ 
+
+১। কিছু প্রতিষ্ঠান Third Party IT Service Provider এর কাছ থেকে virtual private server (VPS), hosting server, mail server, web server, database server ভাড়া নিয়ে থাকে।
+
+২। কিছু প্রতিষ্ঠান নিজেদের server এ  configure করে নিজেদের IT Team দিয়ে Operate করে।
+
+৩। কিছু প্রতিষ্ঠান 3rd Party Datacenter এ জায়াগা ভাড়া নিয়ে নিজেদের হার্ডওয়ার ও engineer দিয়ে Operate করে। 
+
+আরো, অন্য মাধ্যম থাকতে পারে এগুলো হলো সাধারণ প্রতিষ্ঠানের ক্ষেত্রে আর যদি IT Organization হয় যেমনঃ Software Companny, ISP Companny, Domain-Hosting Provider অথবা Cloud Service Provider etc. এসব কোম্পানীর জন্য অনেক ধরনের সার্ভিস চালানোর প্রয়োজন হয় সেক্ষেত্রে অনেকগুলো server দরকার । এখন এই server বা service গুলো AWS, Azure, GCP, Digital Ocen আরো অনেক Cloud Provider এর কাছ থেকে নিয়ে থাকে যা অনেক ব্যয়বহুল।
+
+আপনার যদি নিজের Server বা Datacenter থাকে এবং আপনি যদি Cloud Computing ও OpenStack জেনে থাকেন এবং আপনার দক্ষ ও যৌগ্য কর্মী থাকে তাহলে আপনি আপনার  নিজের প্রতিষ্ঠানের জন্য Private Cloud তৈরি করে সমস্ত সার্ভিস চালাতে পারবেন এবং সেটা আপনার নিয়ন্ত্রণেই থাকবে। আর IT Organization গুলো AWS, Azure, GCP, Alibaba cloud এর মত Publicly Cloud Service Provide করতে পারবে এবং সেটা Self Service ই হবে কোনো Customer আপনার ওয়েবসাইটে ঢুকে Registration করে  নির্দিষ্ট কনফিগারেশনের সার্ভার নিতে পারবে এবং Automatic Price Quotation তৈরি হবে Customer তার Cradit Card দিয়ে পেমেন্ট করবে আর Instance তৈরি হয়ে যাবে এবং Dashboard পাবে। Dashboard থেকে নিজের VPC তে নিজের মত configure করে কাজ করতে পারবে।    
+
+
+OpenStack দিয়ে আরো অনেক কিছু করা সম্ভব । 
+বিখাত্য মহাকাশ গবেষণা প্রতিষ্ঠান NASA ছাড়াও বহু Organization এই  OpenStack ব্যবহার করে।
+refercence: https://en.wikipedia.org/wiki/OpenStack
+
+
+
+
+
+
+
+
+
