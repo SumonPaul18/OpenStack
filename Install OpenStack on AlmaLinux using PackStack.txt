@@ -1,0 +1,289 @@
+
+
+++++++++++++++++++++++++++++++++++++
+Install OpenStack on AlmaLinux using Packstack
+++++++++++++++++++++++++++++++++++++
+
+#Common Setup
+
+cat /etc/redhat-release
+
+grep -E ' svm | vmx' /proc/cpuinfo
+
+lsmod | grep kvm
+
+lscpu
+
+free -h
+
+lsblk
+
+hostnamectl set-hostname cloud
+
+ip a
+
+yum install nano -y
+
+#Need to Configure Static IP
+cp /etc/sysconfig/network-scripts/ifcfg-eno1 /etc/sysconfig/network-scripts/ifcfg-eno1.bak
+
+nano /etc/sysconfig/network-scripts/ifcfg-eno1
+
+HWADRR=00:23:24:8e:e5:8d
+NM_CONTROLLED=no
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.101.230
+PREFIX=24
+GATEWAY=192.168.100.1
+DNS1=202.74.244.5
+DNS2=202.74.240.3
+DEVICE=enp0s3
+
+nmcli connection up enp0s3
+
+ip a s enp0s3
+
+systemctl restart NetworkManager
+
+ping google.com
+
+
+#Edit Hosts file:
+echo "192.168.106.120 cloud.paulco.xyz cloud" >> /etc/hosts
+
+#Disable SELinux:
+getenforce
+#setenforce 0
+sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+
+# Disable Firewalld
+systemctl disable firewalld
+systemctl stop firewalld
+
+# Install network-scripts package
+yum install network-scripts -y
+
+# Enable/Start Network Service
+systemctl status network
+systemctl enable network
+systemctl start network
+
+systemctl restart network
+
+# Disable/Stop NetworkManager
+systemctl status NetworkManager
+systemctl disable NetworkManager
+systemctl stop NetworkManager
+
+#systemctl restart NetworkManager
+
+++++++++++++++++++++++++
+##If you face Networking error when you stop NetworkManage, Then you need to troubleshooting on network.
+##Actually, By default you system access internet or networking using NetworkManager service, But when you stop/disable 
+NetworkManager service then you need to enable/start network service. Then need setup network ip manually with MAC Address, Device Name, NM_Controled=no, IPADDR, Prefix, Gateway, DNS. Then using ifup [interface name], then restart network service.Then check internet or networking. its may be solved. 
+
+++++++++++
+##Solve Networking After Disable/Stop NetworkManager
+++++++++++
+
+nano /etc/sysconfig/network-scripts/ifcfg-eno1
+
+HWADRR=00:23:24:8e:e5:8d
+NM_CONTROLLED=no
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.101.230
+PREFIX=24
+GATEWAY=192.168.100.1
+DNS1=202.74.244.5
+DNS2=202.74.240.3
+DEVICE=enp0s3
+
+ifup enp0s3
+#ifdown enp0s3
+
+#systemctl mask NetworkManager.service
+#systemctl stop NetworkManager.service
+#systemctl disable NetworkManager.service
+#systemctl list-unit-files | grep NetworkManager
+
+++++++++++++++++++++++++++++++++++++
+
+yum autoremove epel-release
+
+yum autoremove openstack-packstack
+ 
+yum clean all
+
+yum repolist
+
+yum update -y && yum upgrade -y
+
+reboot
+++++++++++++++++++++++++++++++++++++++++++++++++++
+##Download or Configure OpenStack YUM Repository +
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#yum -y install https://repos.fedorapeople.org/repos/openstack/openstack-yoga/rdo-release-yoga-1.el8.noarch.rpm
+
+#dnf install centos-release-openstack-train -y
+
+#install epel repository
+#dnf install epel-release
+
+#Working On AlmaLinux8
+dnf install centos-release-openstack-victoria -y    
+
+#install openstack-packstack
+
+#dnf install -y openstack-packstack
+
+yum install -y openstack-packstack
+
+yum config-manager --enable powertools
+
+yum repolist
+
+yum update -y
+
+packstack --version
+
+packstack --help
+
+++++++++++++++++ Generate Answers +++++++++++++++++++++++
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+##Pre-Installation with Generate Answers file##
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+packstack --os-neutron-ml2-tenant-network-types=vxlan \
+--os-neutron-ovs-bridge-interfaces=br-ex:enp0s3 \
+--os-neutron-ml2-mechanism-drivers=openvswitch \
+--os-neutron-ml2-type-drivers=vxlan,flat \
+--os-neutron-l2-agent=openvswitch \
+--keystone-admin-passwd=openstack \
+--provision-demo=n \
+--os-heat-install=y \
+--gen-answer-file /root/answers.txt
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+##Custom Installation After Generate Answers file##
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+packstack --gen-answer-file /root/answers.txt
+
+#Take Copy the answes file
+cp answers.txt copy.answers.txt
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+##Important: Edit the file whats we install 
+++++++++++++++++++++++++++++++++++++++++++++++++
+nano answers.txt
+
+>>Change to y/n
+
+CONFIG_NTP_SERVERS=0.asia.pool.ntp.org,1.asia.pool.ntp.org,2.asia.pool.ntp.org,3.asia.pool.ntp.org
+
+CONFIG_CONTROLLER_HOST=192.168.10.10
+
+CONFIG_COMPUTE_HOSTS=192.168.10.10
+
+CONFIG_NETWORK_HOSTS=192.168.10.10
+
+CONFIG_STORAGE_HOST=192.168.10.10
+
+CONFIG_KEYSTONE_ADMIN_PW=openstack
+++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++ Networking +++++++++++++++++++
+#search and change Bridge
+CONFIG_NEUTRON_OVS_BRIDGE_IFACES=br-ex:enp0s3
+CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS=openvswitch
+CONFIG_NEUTRON_L2_AGENT=openvswitch
+
+# Disable Nagios
+CONFIG_NAGIOS_INSTALL=n
+
+##Disable the demo provisioning
+CONFIG_PROVISION_DEMO=n
+
+++++++++++++++++++++++++++++++++++
+##Installation OpenStack##
+++++++++++++++++++++++++++++++++++
+
+packstack --answer-file #/root/answers.txt | tee Openstack-Installation-log.txt
+
+++++++++++++++++++++++++++++++++++
+
+## View Installation Log ##
+
+# The installation log file is available at: 
+
+tail -f /var/tmp/packstack/latest/openstack-setup.log
+ 
+# The generated manifests are available at: 
+
+tail -f /var/tmp/packstack/20230119-111007-GkD8Cn/manifests
+
+++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++++++++
+#Install OpenStack WithOut Demo
+++++++++++++++++++++++++++++++++++
+#packstack --allinone --provision-demo=n
+
+++++++++++++++++++++++++++++++++++
+#Install OpenStack With Demo
+++++++++++++++++++++++++++++++++++
+#packstack --allinone
+
+
+ **** Installation Completed Successfully ******
+
+++++++++++++++++++++++++++++++++++
+#After Installation Complete     +
+++++++++++++++++++++++++++++++++++
+#Access OpenStack from CLI / Horizon Dashboard
+------------------------------------------------
+source ~/keystonerc_admin
+
+openstack service list
+
+#To access Horizon Dashboard use the URL: 
+#http://ServerIPAddress/dashboard.
+
+http://192.168.106.120/dashboard
+
+#Login Credentials in Here:
+
+cat ~/keystonerc_admin
+
+++++++++++++++++++++++++++++++++
+Configuration OpenStack
+++++++++++++++++++++++++++++++++
+............................
+##Now Download Cirros image 
+............................
+
+wget http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img
+
+..................................
+Upload-Create Image on OpenStack
+..................................
+
+openstack image create --disk-format qcow2 --container-format bare --public --file cirros-0.5.1-x86_64-disk.img  cirros
+
+openstack image list
+
+openstack image delete cirros
+
+
+
+++++++++++++++++++++++++++++++++
+Remove or Uninstall OpenStack  +
+++++++++++++++++++++++++++++++++
+#If you need to uninstall openstack
+-------------------------------------
+#yum -y remove openstack-*
+
+++++++++++++++++++++++++++++++++ Finish ++++++++++++++++++++++++++++++++
