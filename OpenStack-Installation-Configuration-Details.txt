@@ -1,0 +1,1123 @@
+Reference: 
+
+1. https://www.linuxtechi.com/install-openstack-centos-8-with-packstack/ (Following which noted)
+
+2. https://computingforgeeks.com/install-openstack-victoria-on-centos/
+
+3. https://linuxhint.com/install_openstack_centos/
+
+4. https://www.youtube.com/watch?v=eLCxfuDfkgo&list=PLqvYUVuTHt9yt7WdEdWyLU-y8eeQ0uSZk&index=7 (Follow PostConfig)
+
+5. https://www.youtube.com/watch?v=NlwXe9ZNpNs (OpenStack-MultiNode)
+
+6. https://www.youtube.com/watch?v=etvmdLQ5DtY (OpenStack-Multinode-Explain)
+
+7. https://www.youtube.com/watch?v=in5-pwSVxwc (Following for SingleNode)
+
+8. https://www.rdoproject.org/install/packstack/ (OpenStack Packstack installation utility )
+
+9. https://www.linuxtechi.com/multiple-node-openstack-liberty-installation-on-centos-7-x/ (Fllowing for Multinode) 
+
+10. https://computingforgeeks.com/deploy-openstack-cloud-on-centos-rhel-with-packstack-rdo/ (Last Fllowing it's Details)
+
+11. https://medium.com/geekculture/how-to-create-a-personal-cloud-at-home-using-openstack-24061f991048  (Fllowing Home lab's and Customize setup)
+
+..................................................
+OpenStack Installation
+..................................................
+
+cat /etc/redhat-release
+
+grep -E ' svm | vmx' /proc/cpuinfo
+
+lsmod | grep kvm
+
+lscpu
+
+free -h
+
+lsblk
+
+hostnamectl set-hostname cloud.paulco.xyz
+
+ip a
+
+nmcli connection show
+nmcli con mod enps03 ipv4.addresses 192.168.2.20/24
+nmcli con mod enps03 ipv4.gateway 192.168.2.1
+nmcli con mod enps03 ipv4.dns “8.8.8.8”
+nmcli con mod enps03 ipv4.method manual
+nmcli con up enps03
+
+nmcli connection add con-name enp0s3 ifname enp0s3 type ethernet autoconnect yes
+
+
+cp /etc/sysconfig/network-scripts/ifcfg-eno1 /etc/sysconfig/network-scripts/ifcfg-eno1.bak
+
+vi /etc/sysconfig/network-scripts/ifcfg-eno1
+
+HWADRR=00:23:24:8e:e5:8d
+NM_CONTROLLED=no
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.101.230
+PREFIX=22
+GATEWAY=192.168.100.1
+DNS1=202.74.244.5
+DNS2=202.74.240.3
+
+nmcli connection up enp0s3
+
+ip a s enp0s3
+
+
+#systemctl restart network
+systemctl restart NetworkManager
+
+echo "192.168.101.230 controller controller.aamra.com" >> /etc/hosts
+echo "192.168.101.231 network network.aamra.com" >> /etc/hosts
+echo "192.168.101.233 compute compute.aamra.com" >> /etc/hosts
+
+cat /etc/hosts
+
+192.168.0.103 stack stack.aamra.com
+192.168.0.103 compute compute.aamra.com
+192.168.101.243 network network.aamra.com
+
+#yum install network-scripts -y
+
+systemctl disable --now firewalld NetworkManager
+
+systemctl stop firewalld NetworkManager
+
+systemctl restart network
+
+systemctl start network
+
+systemctl enable network
+
+
+##
+##systemctl status iptables
+
+##systemctl stop iptables
+
+##systemctl disable iptables
+##
+
+#Disable selinux
+getenforce
+
+setenforce 0
+
+vi /etc/selinux/config
+SELINUX=permissive
+
+sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
+
+yum update -y
+
+sudo yum install nano vim wget curl telnet bash-completion screen -y
+
+
+reboot
+
+++++++ Keypair ++++++
+ssh-keygen
+
+cat ~/.ssh/id_rsa.pub
+
+ssh-copy-id root@192.168.101.231
+
+ssh root@192.168.101.231
+
++++++++++++++++++++++
+
+#yum config-manager --enable powertools
+
+#yum config-manager --set-enabled powertools
+
+yum autoremove epel-release
+
+yum autoremove openstack-packstack
+ 
+yum clean all
+
+yum search centos-release-openstack
+
+yum install -y https://www.rdoproject.org/repos/rdo-release.rpm
+
+#Replace(queens)as your version
+yum install -y centos-release-openstack-queens.noarch                
+
+#Remove OpenStack Packages
+# yum remove -y centos-release-openstack-wallaby                   
+
+
+yum update -y
+
+yum install -y openstack-packstack
+
+packstack --version
+
+packstack --help
+
+rpm -qa | grep openstack
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Skip Now: Basic Storage Configuration
+++++++++++++++++++++++++++++++++++++++++++++++
+
+# Cinder and Swift storage will be on my block device /dev/sdb
+
+sudo parted -s -a optimal -- /dev/sdc mklabel gpt
+
+sudo parted -s -a optimal -- /dev/sdc mkpart primary 0% 70%
+
+sudo parted -s -a optimal -- /dev/sdc mkpart primary 70% 100%
+
+# For Cinder, I’ll create a separate LVM Volume group which uses /dev/sdb1
+
+sudo pvcreate /dev/sdc1
+    Physical volume "/dev/sdc1" successfully created. 
+
+sudo vgcreate cinder-volumes /dev/sdc1
+    Volume group "cinder-volumes" successfully created
+
+sudo lvcreate -l 100%FREE -T cinder-volumes/cinder-volumes-pool
+
+    Thin pool volume with chunk size 256.00 KiB can address at most 63.25 TiB of data.
+     Logical volume "cinder-volumes-pool" created.
+  
+  
+# Swift storage will sit on a partition /dev/sdc2, Let’s create a filesystem on it.
+
+sudo mkfs.xfs /dev/sdb2
+
+## Mount /dev/sdb2
+
+mount /dev/sdb2 /srv/node/device1
+
+&&Another ways only add addi hdd & make partition
+
+mkfs.xfs /dev/sdb
+
+vi /etc/fstab
+
+/dev/sdb2    /opt/devstack   xfs defaults    0 1
+
+
+mkdir /opt/devstack
+
+mount -a
+
+df -hT
+
+++++++++++++++++++++++++++++++++++++++++++++++
+
+##Default Installation with All in One##
+
+packstack --allinone
+
+++++++++++++++++++++++++++++++++++++++++++++++
+
+##Custom Installation##
+
+packstack --gen-answer-file /root/answers.txt
+
+#Take Copy the answes file
+
+cp answers.txt copy.answers.txt
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+##Important: Edit the file whats we install 
+
+vi answers.txt
+
+
+>>Change to y/n
+
+CONFIG_NTP_SERVERS=0.asia.pool.ntp.org,1.asia.pool.ntp.org,2.asia.pool.ntp.org,3.asia.pool.ntp.org
+
+CONFIG_CONTROLLER_HOST=192.168.10.10
+
+CONFIG_COMPUTE_HOSTS=192.168.10.10
+
+CONFIG_NETWORK_HOSTS=192.168.10.10
+
+CONFIG_STORAGE_HOST=192.168.10.10
+
+CONFIG_KEYSTONE_ADMIN_PW=openstack
+
+#When create swift storage
+#CONFIG_SWIFT_STORAGES=/dev/sdb2
+
+CONFIG_PROVISION_DEMO=n
+
+CONFIG_HEAT_INSTALL=y
+
+CONFIG_MAGNUM_INSTALL=y
+
+CONFIG_HEAT_CFN_INSTALL=y
+
+CONFIG_CEILOMETER_INSTALL=y
+
+CONFIG_LBAAS_INSTALL=y
+
+#When create swift storage
+#CONFIG_CINDER_VOLUMES_CREATE=n
+
+CONFIG_NOVA_SCHED_RAM_ALLOC_RATIO=3.0
+
+CONFIG_NOVA_LIBVIRT_VIRT_TYPE=%{::default_hypervisor}
+
+CONFIG_HORIZON_SSL=n
+
++++++ Networking +++++++++
+#search and change Bridge to Physical Interface (which access internet)
+
+CONFIG_NEUTRON_OVS_BRIDGE_IFACES=br-ex:enp0s3
+
+#must be check this sections.
+#search and check what is ML2_Machanisum & L2_Driver.
+#ML2_Machanisum is = openvswitch
+#L2_Driver is = openvswitch
+
+# Disable Nagios
+CONFIG_NAGIOS_INSTALL=n
+
+++++++++++++++++++++++++++++++++++
+##Installation OpenStack##
+++++++++++++++++++++++++++++++++++
+
+packstack --answer-file #/root/answers.txt | tee Openstack-Installation-log.txt
+
+++++++++++++++++++++++++++++++++++
+
+## View Installation Log ##
+
+
+
+ * The installation log file is available at: 
+tail -f /var/tmp/packstack/20230119-111007-GkD8Cn/openstack-setup.log
+ 
+ * The generated manifests are available at: 
+ tail -f /var/tmp/packstack/20230119-111007-GkD8Cn/manifests
+ 
+ 
+++++++++++++++++++++++++++++++++++
+After Installation Complete
+++++++++++++++++++++++++++++++++++
+After Installation Completed Configuration OVS Bridge Networking
+
+
+++++++++++++++++++++++++++++++++++
+##Create an external OVS bridge on your interface.
+++++++++++++++++++++++++++++++++++   
+
+## Move your static route for configured interface to br-ex.
+
+cp /etc/sysconfig/network-scripts/ifcfg-eno1 /etc/sysconfig/network-scripts/main-eno1
+
+cp /etc/sysconfig/network-scripts/ifcfg-eno1 /etc/sysconfig/network-scripts/ifcfg-br-ex
+    
+vi /etc/sysconfig/network-scripts/ifcfg-eno1
+
+DEVICE=eno1
+HWADDR=00:23:24:a7:98:83
+DEVICETYPE=ovs
+TYPE=OVSPort
+OVS_BRIDGE=br-ex 
+ONBOOT=yes
+
+vi /etc/sysconfig/network-scripts/ifcfg-br-ex
+
+NM_CONTROLLED=no
+DEVICE=br-ex
+DEVICETYPE=ovs
+TYPE=OVSBridge
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.101.231
+NETMASK=255.255.252.0
+GATEWAY=192.168.100.1
+DNS1=8.8.8.8
+DNS2=8.8.4.4
+DNS3=1.1.1.1
+......................................
+
+systemctl restart network.service
+
+ovs-vsctl add-br br-ex
+
+ovs-vsctl show
+
+## Add the network physical interface to the br-ex bridge in Open vSwitch.
+
+ovs-vsctl add-port br-ex eno1; systemctl restart network.service
+
+
+## Additional bridges can be configured in a similar manner. You’ll need to configure Open vSwitch with correct mappings.
+
+vi /etc/neutron/plugins/ml2/openvswitch_agent.ini 
+
+bridge_mappings=extnet:br-ex
+
+# Restart Nova services.
+
+systemctl restart openstack-nova-compute
+
+systemctl restart openstack-nova-api
+
+systemctl restart openstack-nova-scheduler
+
+++++++++++++++++++++++++++++++++++
+ 
+##Admin Login Page Autho
+ 
+cat keystonerc_admin
+
+.................................................
+## OpenStack Services tools
+.................................................
+
+yum install  openstack-utils -y
+
+#yum install python-openstackclient* -y
+
+#yum list install openstack-utils* -y
+
+. keystonerc_admin
+
+openstack-status
+
+openstack-service status
+
+openstack-service start
+
+openstack-service restart
+
+openstack-service stop
+
+systemctl status rabbitmq-server.service
+
+systemctl start rabbitmq-server
+
+systemctl restart openstack-nova-network
+
+systemctl enable rabbitmq-server.service
+
+systemctl restart rabbitmq-server.service
+
+
+openstack-service status cinder
+
+systemctl start neutron-metadata-agent.service
+
+systemctl enable neutron-metadata-agent.service
+
+openstack-service status glance | column -t | grep active
+
+openstack-service restart glance    -restart glance all 
+
+systemctl status openstack-glance-api.service
+
+service rabbitmq-server stop
+
+service rabbitmq-server start
+
+service openstack-nova-compute restart
+
+yum install openstack-nova-compute
+
+#openstack-service list |xargs openstack-service disable
+
+#openstack-service list |xargs openstack-service enable
+
+#openstack-service list |xargs openstack-service stop
+
+#openstack-service list |xargs openstack-service
+
+.................................................
+Post Installation On OpenStack
+.................................................
+#After Install Check
+
+ip a s enp0s3
+
+ip a s br-ex
+
+ovs-vsctl show
+
++++++++++++++++++++++++++++++++++++++++++
++ How to configure Network in OpenStack +
++++++++++++++++++++++++++++++++++++++++++
+#From GUI
+#Login openstack dashboard
+
+#Main thing is create network for instance to openstack server network as line real life seniraio. 
+
+1. create public network under Admin section and public subnet here network is must lan network or it could be openstack server network ip which connected by physical network.
+
+2. create private network under project section here networks is private ip as like instance to openstack connection.
+.................................................
+>>CLI
+.................................................
+
+#let’s first create external network in admin tenant using following neutron commands
+
+source keystonerc_admin
+or 
+. keystonerc_admin
+
+neutron net-create external_network --provider:network_type flat --provider:physical_network extnet --router:external
+
+#Now add a subnet of your flat network to external network by running following neutron command
+
+neutron subnet-create --name public_subnet --enable_dhcp=True --allocation-pool=start=192.168.1.210,end=192.168.1.230 --gateway=192.168.1.1 external_network 192.168.1.0/24
+
+#Create a router by executing the following neutron command and set its gateway using external network
+
+neutron router-create dev-router
+
+neutron router-gateway-set dev-router external_network
+
+#Create private network and attach a subnet to it. Run the following neutron command:
+
+neutron net-create private
+
+neutron subnet-create --name private_subnet private 192.168.100.0/24
+
+#Add pvt_net interface to router “dev_router” using beneath neutron command:
+
+neutron router-interface-add Router  private_subnet
+..................................................
+
+.................................................
+## Network Configure after OpenStack Installation ##
+.................................................
+
+##Create OpenStack private Network.
+
+openstack network create private
+
+##Create subnet for private Network.
+
+openstack subnet create --network private --allocation-pool start=10.1.1.50,end=10.1.1.200 --dns-nameserver 8.8.8.8 --subnet-range 10.1.1.0/24 private_subnet
+
+##Create a public network.
+
+openstack network create --provider-network-type flat --provider-physical-network extnet --external public
+
+##Create subnet for public Network.
+
+openstack subnet create --network public --allocation-pool start=10.101.11.201,end=10.101.11.215 --no-dhcp --subnet-range 10.101.11.0/24 public_subnet
+
+##Add a new router and configure router interfaces.
+
+openstack router create --no-ha router1
+
+##Add Interface in Router
+
+openstack router set --external-gateway public router1
+
+openstack router add subnet router1 private_subnet
+
+ip netns show
+
+%%%%%%%%%
+vi /etc/neutron/dhcp_agent.ini
+
+#search
+isolated
+
+#edit make true
+enable_isolated_metadata=true
+
+systemctl restart neutron-dhcp-agent
+%%%%%%%
+
+++++++ Keypair ++++++
+
+cat ~/.ssh/id_rsa.pub
+
+**************************
+Network Troubleshooting
+**************************
+neutron net-list
+
+neutron subnet-list
+
+neutron port-list
+
+neutron port-show 9810105a-edf5-41bc-a140-81ccf71f6bc4
+
+neutron router-show demo-router
+
+neutron router-list
+
+ip netns list
+
+ip netns exec qrouter-8ae4b1fa-fb60-4690-bbe2-febbfbcf7555 route -n
+
+netstat -rn
+
+neutron router-list
+
+ip netns exec qrouter-6f16e8a7-490f-442c-8616-9c8213d7f3df netstat -rn
+
+ip netns exec qrouter-6f16e8a7-490f-442c-8616-9c8213d7f3df arp -an
+
+
+ip netns exec qrouter-6f16e8a7-490f-442c-8616-9c8213d7f3df ping 10.0.0.1
+
+.................................................
+##Now Download Cirros image and then upload it to glance
+.................................................
+
+#Cloud-Images for OpenStack
+https://docs.openstack.org/image-guide/obtain-images.html
+
+wget http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img
+
+wget https://cloud.centos.org/centos/7/images/CentOS-7-aarch64-GenericCloud-2009.qcow2
+
+wget http://cdimage.debian.org/cdimage/openstack/current-10/debian-10-openstack-amd64.qcow2
+
+wget https://download.fedoraproject.org/pub/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-37-1.7.x86_64.qcow2
+
+#Ubuntu Cloud Images Link
+
+https://cloud-images.ubuntu.com/
+
+wget http://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+
+#wget https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-arm64.img
+
+#Customized OpenStack Images
+https://www.mirantis.com/blog/how-to-manually-create-an-openstack-image/
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+#Create a Instance using image
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Default username/password for Cloud image in OpenStack  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Ref:
+https://devicetests.com/ubuntu-cloud-image-openstack-default-password
+
+#Basically Any Cloud Images haven't no default username/password for the cloud image. Need to configure it using below cmd, before creating instance from the image.
+
+virt-customize -a bionic-server-cloudimg-amd64.img --root-password password:typeyourpassword
+
+#Need to install below pkg to get virt-customize cmd.
+
+sudo apt install libguestfs-tools
+
++++++++++++++++++++++++++++++++++++++++++++++++++
++ How to Access the Instance
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ssh -i your-priv-key ubuntu@your_machine_ip
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+.................................................
+# Create OpenStack Images
+.................................................
+
+openstack image create --disk-format qcow2 --container-format bare --public --file cirros-0.5.1-x86_64-disk.img  cirros
+
+openstack image create --disk-format qcow2 --container-format bare --public --file CentOS-7-aarch64-GenericCloud-2009.qcow2  CentOS-7
+
+openstack image create --disk-format qcow2 --container-format bare --public --file jammy-server-cloudimg-amd64.img  Ubuntu-Jammy
+
+
+
+openstack image list
+
+openstack image list | grep cirros
+
+openstack image delete cirros
+
+openstack server list
+
+openstack user list
+
+openstack user create --project PROJECT_NAME --password PASSWORD \USERNAME
+
+openstack user set USERNAME --disable
+
+openstack user set USERNAME --enable
+
+openstack server stop
+
+openstack server start
+
+nova reset-state c6bbbf26-b40a-47e7-8d5c-eb17bf65c485
+
+openstack server delete c6bbbf26-b40a-47e7-8d5c-eb17bf65c485
+
+nova reset-state --active c6bbbf26-b40a-47e7-8d5c-eb17bf65c485
+
+#Verify compute services list
+
+openstack compute service list
+
+nova reboot --hard Instance_Name
+
+nova show instance_name
+
+nova-manage service list
+
+nova pause INSTANCE_NAME
+
+nova unpause INSTANCE_NAME
+
+nova suspend INSTANCE_NAME
+
+nova resume INSTANCE_NAME
+
+nova shelve SERVERNAME
+
+nova unshelve SERVERNAME
+
+nova rescue SERVER
+
+nova unrescue SERVER
+
+nova list
+
+openstack flavor list
+
+openstack floating ip list
+
+qemu-img info 
+
+++++++++++++++++++++++++++++++++++++++
++ Create flavors and Security groups +
+++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++
++ Let’s add OpenStack flavors:    +
++++++++++++++++++++++++++++++++++++
+
+openstack flavor create --id 0 --ram 1024  --vcpus  1 --swap 512   --disk 8     m1.tiny
+openstack flavor create --id 2 --ram 2048  --vcpus  1 --swap 1024  --disk 8     m1.small
+openstack flavor create --id 3 --ram 4096  --vcpus  2 --swap 2048  --disk 15    m1.medium
+openstack flavor create --id 4 --ram 8192  --vcpus  4 --swap 8192  --disk 20    m1.large
+openstack flavor create --id 5 --ram 16384 --vcpus  8 --swap 8192  --disk 20   m1.xlarge
+
+++++++++++++++++++++++++++++++++++++++
++ Let's add basic security group     +
+++++++++++++++++++++++++++++++++++++++
+
+openstack security group create basic --description "Allow base ports"
+openstack security group rule create --protocol TCP --dst-port 22 --remote-ip 0.0.0.0/0 basic
+openstack security group rule create --protocol TCP --dst-port 80 --remote-ip 0.0.0.0/0 basic
+openstack security group rule create --protocol TCP --dst-port 443 --remote-ip 0.0.0.0/0 basic
+openstack security group rule create --protocol ICMP --remote-ip 0.0.0.0/0 basic
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Create a new key for your account or use existing   +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ssh-keygen -q -N "" 
+
+openstack keypair create --public-key=~/.ssh/id_rsa.pub adminkey 
+
++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+#Error: Something went wrong! An unexpected error has occurred. Try refreshing the page. If that doesn't help, contact your local administrator.
+
+service apache2 restart
+service memcached restart
+
+................................................
+How to Convert vhd/image/iso to QCOW2
+................................................
+##VBoxManage: VDI (VirtualBox) to raw
+If you’ve created a VDI image using VirtualBox, you can convert it to raw format using the VBoxManage command-line tool that ships with VirtualBox. On Mac OS X, and Linux, VirtualBox stores images by default in the ~/VirtualBox VMs/ directory. The following example creates a raw image in the current directory from a VirtualBox VDI image.
+
+VBoxManage clonehd ~/VirtualBox\ VMs/image.vdi image.img --format raw
+
+...................................................
+
+.................................................
+##Error: If can't reach host to instance
+.................................................
+cd /etc/neutron/
+
+vi dhcp_agent.ini
+
+>Search
+
+isolated
+
+enable_isolated_metadata = true
+
+systemctl restart neutron-dhcp-agent
+.................................................
+
+##Error: When luanch a instance then show the error timeout
+
+#Show nova-compute.log
+
+tail -f /var/log/nova/nova-compute.log
+
+vi /etc/nova/nova.conf.d/100-nova.conf
+
+block_device_allocate_retries = 300
+block_device_allocate_retries_interval = 3
+.................................................
+###
+
+https://www.informaticar.net/openstack-exceeded-maximum-number-of-retries-exhausted-all-hosts-available-for-retrying-build-failures-for-instance/
+
+
+tail -f /var/log/volume.log
+
+tail -f /var/log/nova/nova-conductor.log
+.................................................
+
+###
+https://www.linuxtechi.com/create-delete-virtual-machine-command-line-openstack/
+
+
+
+firewall-cmd --permanent --add-port=6080/tcp
+
+firewall-cmd --permanent --add-port=6080/udp
+
+firewall-cmd --reload
+
+.............................................
+##Error:
+NoValidHost: No valid host was found. There are not enough hosts available
+
+Solution:
+https://stackoverflow.com/questions/45511739/novalidhost-no-valid-host-was-found-there-are-not-enough-hosts-available
+
+#edit /etc/nova/nova.conf in all the compute node and modify as per your application requirement .
+
+vi /etc/nova/nova.conf
+
+cpu_allocation_ratio = 2.0      (double of physical core can be used for total instance) 
+ram_allocation_ratio = 2.0      (double of Total memory can be used for total instance)
+
+#restart nova and nova-scheduler in all the compute node
+
+systemctl restart openstack-nova-*
+
+systemctl restart openstack-nova-scheduler.service
+
+......................................................
+
+................................................
+##How to Customize Openstack Dashboard
+................................................
+
+1. https://cloud.garr.it/support/kb/cloud/Customize_dashboard/
+2. https://medium.com/geekculture/how-to-create-a-personal-cloud-at-home-using-openstack-24061f991048
+
+loginPagelogoSize=300x145 (format=svg)
+src="/dashboard/static/dashboard/img/logo-splash.svg"
+
+DashboardlogoSize=300x53
+src="/dashboard/static/dashboard/img/logo.svg"
+
+Change into Controller Node:
+ll /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/
+
+cp /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/logo-splash.svg /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/old.logo-splash.svg
+
+
+cp /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/logo-splash.svg /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/old.logo.svg    
+
+rm -rf /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/logo-splash.svg
+
+rm -rf /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/logo.svg
+
+cp /root/logo-splash.svg logo.svg /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img/
+
+
+systemctl restart httpd
+systemctl restart memcached
+
++++++++++++++++++++++++++++++++++++++++++++
+How to add a new compute node to existing all-in-one packstack setup
++++++++++++++++++++++++++++++++++++++++++++
+
++++++++++++++++++++++++++ Not Needed +++++++++++++++++++++++++++++++
+##Install OpenVSwitch
+
+#ref: https://www.linuxtechi.com/install-use-openvswitch-kvm-centos-7-rhel-7/
+
+yum install -y https://www.rdoproject.org/repos/rdo-release.rpm
+
+
+yum install openvswitch libibverbs -y
+
+or
+
+systemctl enable --now openvswitch
+
+systemctl status openvswitch
+
+systemctl restart openvswitch
+
+ovs-vsctl -V
+
+ovs-vsctl show
+
+vi /etc/neutron/plugins/ml2/openvswitch_agent.ini
+
+
+local_ip=
+
+vi /etc/nova/nova.conf
+
+vncserver_proxyclient_address=
+
+systemctl start openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
+systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
+systemctl enable openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
++++++++++++++++++++++++++ Not Needed +++++++++++++++++++++++++++++++
+
+##Disable IPtables (How to Turn Off your Firewall)
+
+systemctl status iptables
+
+iptables -L -n -v
+
+iptables -F
+
+iptables -L -n -v
+
+systemctl stop iptables
+
+systemctl disable iptables
+
+
+#Go to OpenStack AllinOne node 
+#
+
+#Edit the answer file
+
+vi answers.txt
+
+EXCLUDE_SERVERS=
+
+CONFIG_COMPUTE_HOSTS=
+
+NTP=
+
+#Before run bellow command, # will be removed.
+
+packstack --answer-file #/root/answers.txt | tee adding-Node-log.txt
+
+#If we get this Error When run avobe command
+
+#Error 1: Pre installing Puppet and discovering hosts' details[ ERROR ].
+
+#Error 2: GPG Keys are configured as: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux.
+
+#Cause: 
+Almalinux 8 Update & Upgrade related problem. we need to changes AlmaLinux 8 GPG key.
+
+#Solution:
+Ref: https://almalinux.org/blog/2023-12-20-almalinux-8-key-update/
+#Import the the GPG key in almalinux8
+
+rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
+
+dnf clean packages
+
+dnf upgrade almalinux-release -y
+
+
+##Installation is Completed Check Compute Node 
+
+rpm -qa | grep -i openstack
+
+#From Compute Node
+
+tail -f /var/log/nova/nova-compute.log
+
+tail -n 20 /var/log/nova/nova-compute.log
+
+openstack-service status
+
+openstack-service restart
+
+openstack-service start
+
+yum install -y openstack-utils
+
+openstack-status
+
+ovs-vsctl show
+
+##Check on Controller Node
+
+nova hypervisor-list
+
+openstack compute service list
+
+nova-status upgrade check
+
+virsh list --all
+
+nova hypervisor-servers compute2
+
+------------------------------------------------------
+systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute
+------------------------------------------------------
+
+---------------------------SomeTimes Needed---------------------------
+
+#From Controller
+
+iptables -L
+
+vi /etc/sysconfig/iptables
+
+
+iptables -I INPUT -p tcp --dport 5672 -j ACCEPT
+
+iptables -I INPUT -p tcp --dport 15672 -j ACCEPT
+
+iptables -I INPUT -p tcp --dport 3306 -j ACCEPT
+
+#iptables -I INPUT -p tcp --dport 3260 -j ACCEPT
+
+#iptables -A INPUT -p tcp --dport 22 -s 0/0 -j ACCEPT
+
+iptables -I INPUT -p udp --dport 53 -j ACCEPT
+
+iptables -I INPUT -p udp --dport 67 -j ACCEPT
+
+service iptables save
+
+systemctl restart iptables
+
+---------------------------SomeTimes Needed---------------------------
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Ways 2: Add Node
++++++++++++++++++++++++++++++++++++++++++++++++
+
+yum install openstack-nova-compute openstack-neutron openstack-neutron-openvswitch -y
+
+
+sed -i.bak -e 's/\/32/\/16/' /etc/sysconfig/iptables
+
+ls -l /etc/sysconfig/iptables*
+
+systemctl restart iptables
+
+iptables -L
+
+systemctl start openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
+
+systemctl restart openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
++++++++++++++++++++++++++++++++++++++++++++++
+Error: OpenStack error: Host is not mapped to any cell
+
+Ref:
+https://cloud.tencent.com/developer/article/1501368
+
+Solution:
+
+nova-manage cell_v2 discover_hosts --verbose
+++++++++++++++++++++++++++++++++++++++++++++
+
+Error: Exceeded maximum number of retries. Exhausted all hosts available for retrying build failures for instance
+
+Solution:
+
+systemctl restart openstack* neutron* libvirtd
+
+systemctl status openstack* neutron* libvirtd
+
+systemctl restart neutron*
+
+
+
++++++++++++++++++
+
+service openstack-nova-compute restart
+
+systemctl restart openstack-nova-compute.service
+
++++++++++++++++++++
+
+
++++++++++++++++++++++++++++++++++++++++
+
+vim /etc/nova-compute.conf
+
+ [DEFAULT]
+ compute_driver=libvirt.LibvirtDriver
+ [libvirt]
+ virt_type=kvm
+ 
+
+ lsof -i :15672
+ 
+ rabbitmqctl status
+ 
+ rabbitmqctl cluster_status
+ 
+ rabbitmqctl list_queues
+ 
+ rabbitmq-plugins list
+ 
+ rabbitmq-plugins enable rabbitmq_management
+ 
+ rabbitmqctl list_users
+ 
+ rabbitmqctl change_password admin admin
+ 
+ systemctl restart rabbitmq-server.service
+ 
++++++++++++++++++++++++++++++++++++++++++++
+
++++++++++++++++++++++++++++++++++++++++++++
++ OpenStack Error Troubleshootings        + 
++++++++++++++++++++++++++++++++++++++++++++
+
+#Checking Compute services
+
+openstack compute service list --service nova-compute
+
+#Check the maintenance mode status
+
+openstack baremetal node list
+
+#Enable or add compute Host
+
+openstack compute service set --enable <COMPUTE HOST> nova-compute
+
+#Verify hypervisor list
+
+openstack hypervisor list
+
+#Verify nova status
+
+nova-status upgrade check
+
