@@ -76,7 +76,10 @@ crontab -l
 crontab -e
 @reboot  /home/user/startup.sh
 
-crontab -e '*/5 * * * * /path/to/your/script.sh'
+#crontab -e '*/5 * * * * /path/to/your/script.sh'
+
+crontab -l | grep -v '^$' ; echo '@reboot /root/build-openstack.sh' | crontab -
+
 
 
 #Deleting an existing job/task in Crontab
