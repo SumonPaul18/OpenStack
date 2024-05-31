@@ -76,6 +76,9 @@ crontab -l
 crontab -e
 @reboot  /home/user/startup.sh
 
+crontab -e '*/5 * * * * /path/to/your/script.sh'
+
+
 #Deleting an existing job/task in Crontab
 
 #delete all jobs/tasks
