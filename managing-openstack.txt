@@ -91,6 +91,13 @@ crontab -l | grep -v '^$' ; echo '@reboot /root/build-openstack.sh' | crontab -
 crontab -l | grep -v '<SPECIFICS OF YOUR SCRIPT HERE>' | crontab -
 crontab -l | grep -v '* * * * * /usr/local/bin/download_weather.py' | crontab -
 
+#Install and Use Screen in Linux
+
+dnf install screen -y
+screen –version
+screen -S Openstack
+screen -ls
+screen -r 2898.upgrade  
 
 
 
