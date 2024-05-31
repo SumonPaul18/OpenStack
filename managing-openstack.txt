@@ -4,3 +4,50 @@ Reference:
     > https://kimizhang.wordpress.com/2015/02/12/nfs-backend-for-openstack-glancecinderinstance-store/
     > https://www.server-world.info/en/note?os=CentOS_7&p=openstack_train2&f=10
     > https://access.redhat.com/articles/1323213
+
+openstack service list
+
+#OpenStack Cinder Storage (NFS)
+dnf -y install nfs-utils
+cat <<EOF | sudo tee /etc/idmapd.conf
+Domain = paulco.xyz
+EOF
+
+systemctl status rpcbind
+systemctl start rpcbind
+systemctl enable rpcbind
+
+cat <<EOF | sudo tee /etc/cinder/nfs_shares
+192.168.0.96:/nfs-share
+EOF
+
+chown root:cinder /etc/cinder/nfs_shares
+#chmod 0640 /etc/cinder/nfs_shares
+chmod 777 /etc/cinder/nfs_shares
+chgrp cinder /etc/cinder/nfs_shares
+systemctl restart openstack-cinder-volume
+#chown -R cinder. /var/lib/cinder/mnt
+
+cat <<EOF | sudo tee /etc/cinder/cinder.conf
+# add follows in [DEFAULT] section
+enabled_backends = nfs
+# add follows to the end
+[nfs]
+volume_driver = cinder.volume.drivers.nfs.NfsDriver
+nfs_shares_config = /etc/cinder/nfs_shares
+#nfs_mount_point_base = $state_path/mnt
+EOF
+
+
+service openstack-cinder-api restart
+service openstack-cinder-backup restart
+service openstack-cinder-scheduler restart
+service openstack-cinder-volume restart
+
+openstack-service status | grep -i cinder
+openstack volume service list
+
+service openstack-cinder-api status
+service openstack-cinder-backup status
+service openstack-cinder-scheduler status
+service openstack-cinder-volume status
