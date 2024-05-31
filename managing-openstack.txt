@@ -51,3 +51,47 @@ service openstack-cinder-api status
 service openstack-cinder-backup status
 service openstack-cinder-scheduler status
 service openstack-cinder-volume status
+
+#Deatch Volume in OpenStack
+openstack volume list
+#openstack volume set --state available --detached cdd25f1a-f09c-43fb-bde4-a3c6e80d33b8
+openstack volume set --state available --detached volume_id/volume_name
+
+openstack availability zone list
+openstack volume delete my-new-volume
+
+
+
+#run a shell script at startup
+
+#dnf install crontabs -y
+#systemctl status crond.service
+#systemctl start crond.service
+#systemctl enable crond.service
+
+chmod +x /home/user/startup.sh
+
+#set a crontab for it:
+crontab -l
+crontab -e
+@reboot  /home/user/startup.sh
+
+#Deleting an existing job/task in Crontab
+
+#delete all jobs/tasks
+#crontab -r
+
+#remove the specific entry
+crontab -l | grep -v '<SPECIFICS OF YOUR SCRIPT HERE>' | crontab -
+
+
+
+
+
+
+
+
+
+
+
+
