@@ -5,6 +5,67 @@ Reference:
     > https://www.server-world.info/en/note?os=CentOS_7&p=openstack_train2&f=10
     > https://access.redhat.com/articles/1323213
 
+#
+
+### Install OpenStack client on AlmaLinux
+
+####
+
+Installing Python and PIP
+    dnf update
+    dnf install python38 python38-pip -y
+    pip3 install --upgrade pip -y
+
+Checking PIP version
+####
+    pip3 --version
+
+####
+Installing OpenStack client
+    pip3 install python-openstackclient
+
+####
+    pip3 show python-openstackclient
+Checking the OpenStack client version
+####
+    source ~/.bashrc
+    openstack --version
+Configuring the OpenStack client
+####
+    nano ~/.keystonerc
+Add the following lines:
+    unset OS_SERVICE_TOKEN
+    export OS_USERNAME='admin'
+    export OS_PASSWORD='adminpassword'
+    export OS_AUTH_URL=http://localhost:5000/v3
+    export PS1='[\u@\h \W(keystone_admin)]\$ '
+
+    export OS_PROJECT_NAME=admin
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_IDENTITY_API_VERSION=3
+
+####
+    source ~/.keystonerc
+
+Verifying the OpenStack client installation
+####
+    openstack server list
+    openstack network list
+    openstack image list
+
+####
+update the OpenStack client
+####
+    pip3 install --upgrade python-openstackclient
+
+####
+How to uninstall the OpenStack client
+    #pip3 uninstall python-openstackclient
+
+    
+################################
+
 openstack service list
 
 #OpenStack Cinder Storage (NFS)
