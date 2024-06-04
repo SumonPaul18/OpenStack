@@ -1,10 +1,9 @@
 ### Configure an NFS storage back end
 Reference: 
-####
-    > https://docs.openstack.org/cinder/rocky/admin/blockstorage-nfs-backend.html
-    > https://kimizhang.wordpress.com/2015/02/12/nfs-backend-for-openstack-glancecinderinstance-store/
-    > https://www.server-world.info/en/note?os=CentOS_7&p=openstack_train2&f=10
-    > https://access.redhat.com/articles/1323213
+> https://docs.openstack.org/cinder/rocky/admin/blockstorage-nfs-backend.html
+  > https://kimizhang.wordpress.com/2015/02/12/nfs-backend-for-openstack-glancecinderinstance-store/
+  > https://www.server-world.info/en/note?os=CentOS_7&p=openstack_train2&f=10
+  > https://access.redhat.com/articles/1323213
 
 #
 
