@@ -33,13 +33,14 @@ Checking the OpenStack client version
 Configuring the OpenStack client
 ####
     nano ~/.keystonerc
+####
 Add the following lines:
+####
     unset OS_SERVICE_TOKEN
     export OS_USERNAME='admin'
     export OS_PASSWORD='adminpassword'
     export OS_AUTH_URL=http://localhost:5000/v3
     export PS1='[\u@\h \W(keystone_admin)]\$ '
-
     export OS_PROJECT_NAME=admin
     export OS_USER_DOMAIN_NAME=Default
     export OS_PROJECT_DOMAIN_NAME=Default
@@ -47,7 +48,7 @@ Add the following lines:
 
 ####
     source ~/.keystonerc
-
+####
 Verifying the OpenStack client installation
 ####
     openstack server list
