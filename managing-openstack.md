@@ -13,7 +13,7 @@ Reference:
 Update Systems and installing Python and PIP
 ####
     dnf update
-    dnf install python38 python38-pip -y
+    dnf install python3.8 python3.8-pip -y
     pip3 install --upgrade pip -y
 
 Checking PIP version
