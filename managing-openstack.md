@@ -10,8 +10,8 @@ Reference:
 ### Install OpenStack client on AlmaLinux
 
 ####
-
-Installing Python and PIP
+Update Systems and installing Python and PIP
+####
     dnf update
     dnf install python38 python38-pip -y
     pip3 install --upgrade pip -y
