@@ -67,9 +67,102 @@ How to uninstall the OpenStack client
 
     
 #
+## Manage OpenStack Services
+####
+    openstack service list
+####
+Restart Nova services.
+####
+    systemctl restart openstack-nova-compute
 
-openstack service list
+    systemctl restart openstack-nova-api
 
+    systemctl restart openstack-nova-scheduler
+####
+    . keystonerc_admin
+
+openstack-status
+
+openstack-service status
+
+openstack-service start
+
+openstack-service restart
+
+openstack-service stop
+
+systemctl status rabbitmq-server.service
+
+systemctl start rabbitmq-server
+
+systemctl restart openstack-nova-network
+
+systemctl enable rabbitmq-server.service
+
+systemctl restart rabbitmq-server.service
+
+
+openstack-service status cinder
+
+systemctl start neutron-metadata-agent.service
+
+systemctl enable neutron-metadata-agent.service
+
+openstack-service status glance | column -t | grep active
+
+openstack-service restart glance    -restart glance all 
+
+systemctl status openstack-glance-api.service
+
+service rabbitmq-server stop
+
+service rabbitmq-server start
+
+service openstack-nova-compute restart
+
+#openstack-service list |xargs openstack-service disable
+
+#openstack-service list |xargs openstack-service enable
+
+#openstack-service list |xargs openstack-service stop
+
+#openstack-service list |xargs openstack-service
+
+#restart nova and nova-scheduler in all the compute node
+
+systemctl restart openstack-nova-*
+
+systemctl restart openstack-nova-scheduler.service
+
+systemctl restart httpd
+systemctl restart memcached
+
+systemctl status openvswitch
+
+systemctl restart openvswitch
+
+systemctl start openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
+systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
+systemctl enable openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+
+systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute
+
+systemctl start openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
+
+systemctl restart openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
+
+systemctl restart openstack* neutron* libvirtd
+
+systemctl status openstack* neutron* libvirtd
+
+systemctl restart neutron*
+
+systemctl restart openstack-nova-compute.service
+
+    
+################
 #OpenStack Cinder Storage (NFS)
 dnf -y install nfs-utils
 cat <<EOF | sudo tee /etc/idmapd.conf
