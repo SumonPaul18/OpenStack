@@ -62,10 +62,11 @@ update the OpenStack client
 
 ####
 How to uninstall the OpenStack client
+####
     #pip3 uninstall python-openstackclient
 
     
-################################
+#
 
 openstack service list
 
