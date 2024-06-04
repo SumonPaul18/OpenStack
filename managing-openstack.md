@@ -80,154 +80,155 @@ Restart Nova services.
     systemctl restart openstack-nova-scheduler
 ####
     . keystonerc_admin
-
-openstack-status
-
-openstack-service status
-
-openstack-service start
-
-openstack-service restart
-
-openstack-service stop
-
-systemctl status rabbitmq-server.service
-
-systemctl start rabbitmq-server
-
-systemctl restart openstack-nova-network
-
-systemctl enable rabbitmq-server.service
-
-systemctl restart rabbitmq-server.service
-
-
-openstack-service status cinder
-
-systemctl start neutron-metadata-agent.service
-
-systemctl enable neutron-metadata-agent.service
-
-openstack-service status glance | column -t | grep active
-
-openstack-service restart glance    -restart glance all 
-
-systemctl status openstack-glance-api.service
-
-service rabbitmq-server stop
-
-service rabbitmq-server start
-
-service openstack-nova-compute restart
-
-#openstack-service list |xargs openstack-service disable
-
-#openstack-service list |xargs openstack-service enable
-
-#openstack-service list |xargs openstack-service stop
-
-#openstack-service list |xargs openstack-service
-
-#restart nova and nova-scheduler in all the compute node
-
-systemctl restart openstack-nova-*
-
-systemctl restart openstack-nova-scheduler.service
-
-systemctl restart httpd
-systemctl restart memcached
-
-systemctl status openvswitch
-
-systemctl restart openvswitch
-
-systemctl start openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
-
-systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
-
-systemctl enable openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
-
-systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute
-
-systemctl start openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
-
-systemctl restart openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
-
-systemctl restart openstack* neutron* libvirtd
-
-systemctl status openstack* neutron* libvirtd
-
-systemctl restart neutron*
-
-systemctl restart openstack-nova-compute.service
-
+####
+    openstack-status
+####
+    openstack-service status
+####
+    openstack-service start
+####
+    openstack-service restart
+####
+    openstack-service stop
+####
+    systemctl status rabbitmq-server.service
+####
+    systemctl start rabbitmq-server
+####
+    systemctl restart openstack-nova-network
+####
+    systemctl enable rabbitmq-server.service
+####
+    systemctl restart rabbitmq-server.service
+####
+    openstack-service status cinder
+####
+    systemctl start neutron-metadata-agent.service
+####
+    systemctl enable neutron-metadata-agent.service
+####
+    openstack-service status glance | column -t | grep active
+####
+    openstack-service restart glance    -restart glance all 
+####
+    systemctl status openstack-glance-api.service
+####
+    service rabbitmq-server stop
+####
+    service rabbitmq-server start
+####
+    service openstack-nova-compute restart
+####
+    #openstack-service list |xargs openstack-service disable
+####
+    #openstack-service list |xargs openstack-service enable
+####
+    #openstack-service list |xargs openstack-service stop
+####
+    #openstack-service list |xargs openstack-service
+####
+    #restart nova and nova-scheduler in all the compute node
+####
+    systemctl restart openstack-nova-*
+####
+    systemctl restart openstack-nova-scheduler.service
+####
+    systemctl restart httpd
+    systemctl restart memcached
+####
+    systemctl status openvswitch
+####
+    systemctl restart openvswitch
+####
+    systemctl start openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+####
+    systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+####
+    systemctl enable openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute 
+####
+    systemctl restart openvswitch libvirtd neutron-openvswitch-agent openstack-nova-compute
+####
+    systemctl start openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
+####
+    systemctl restart openstack-nova-compute openstack-neutron openstack-neutron-openvswitch
+####
+    systemctl restart openstack* neutron* libvirtd
+####
+    systemctl status openstack* neutron* libvirtd
+####
+    systemctl restart neutron*
+####
+    systemctl restart openstack-nova-compute.service
+####
     
 ################
-#OpenStack Cinder Storage (NFS)
-dnf -y install nfs-utils
-cat <<EOF | sudo tee /etc/idmapd.conf
-Domain = paulco.xyz
-EOF
+###    Integrade OpenStack Cinder with NFS Storage
+####
+    dnf -y install nfs-utils
+####
+    cat <<EOF | sudo tee /etc/idmapd.conf
+    Domain = paulco.xyz
+    EOF
+####
+    systemctl status rpcbind
+    systemctl start rpcbind
+    systemctl enable rpcbind
+####
+    cat <<EOF | sudo tee -a /etc/cinder/nfs_shares
+    192.168.0.96:/nfs-share
+    EOF
+####
+    chown root:cinder /etc/cinder/nfs_shares
+    #chmod 0640 /etc/cinder/nfs_shares
+    chmod 777 /etc/cinder/nfs_shares
+    chgrp cinder /etc/cinder/nfs_shares
+    systemctl restart openstack-cinder-volume
+    #chown -R cinder. /var/lib/cinder/mnt
+####
+    cat <<EOF | sudo tee -a /etc/cinder/cinder.conf
+    # add follows in [DEFAULT] section
+    enabled_backends = nfs
+    # add follows to the end
+    [nfs]
+    volume_driver = cinder.volume.drivers.nfs.NfsDriver
+    nfs_shares_config = /etc/cinder/nfs_shares
+    #nfs_mount_point_base = $state_path/mnt
+    EOF
 
-systemctl status rpcbind
-systemctl start rpcbind
-systemctl enable rpcbind
-
-cat <<EOF | sudo tee /etc/cinder/nfs_shares
-192.168.0.96:/nfs-share
-EOF
-
-chown root:cinder /etc/cinder/nfs_shares
-#chmod 0640 /etc/cinder/nfs_shares
-chmod 777 /etc/cinder/nfs_shares
-chgrp cinder /etc/cinder/nfs_shares
-systemctl restart openstack-cinder-volume
-#chown -R cinder. /var/lib/cinder/mnt
-
-cat <<EOF | sudo tee /etc/cinder/cinder.conf
-# add follows in [DEFAULT] section
-enabled_backends = nfs
-# add follows to the end
-[nfs]
-volume_driver = cinder.volume.drivers.nfs.NfsDriver
-nfs_shares_config = /etc/cinder/nfs_shares
-#nfs_mount_point_base = $state_path/mnt
-EOF
-
-
-service openstack-cinder-api restart
-service openstack-cinder-backup restart
-service openstack-cinder-scheduler restart
-service openstack-cinder-volume restart
-
-openstack-service status | grep -i cinder
-openstack volume service list
-
-service openstack-cinder-api status
-service openstack-cinder-backup status
-service openstack-cinder-scheduler status
-service openstack-cinder-volume status
-
-#Deatch Volume in OpenStack
-openstack volume list
+####
+    service openstack-cinder-api restart
+    service openstack-cinder-backup restart
+    service openstack-cinder-scheduler restart
+    service openstack-cinder-volume restart
+####
+    openstack-service status | grep -i cinder
+    service openstack-cinder-api status
+    service openstack-cinder-backup status
+    service openstack-cinder-scheduler status
+    service openstack-cinder-volume status
+####
+Deatch Volume of OpenStack Instance
+####
+    openstack volume list
 #openstack volume set --state available --detached cdd25f1a-f09c-43fb-bde4-a3c6e80d33b8
-openstack volume set --state available --detached volume_id/volume_name
-
-openstack availability zone list
-openstack volume delete my-new-volume
-
-
-
-#run a shell script at startup
-
-#dnf install crontabs -y
-#systemctl status crond.service
-#systemctl start crond.service
-#systemctl enable crond.service
-
-chmod +x /home/user/startup.sh
-
-#set a crontab for it:
+####
+    openstack volume set --state available --detached volume_id/volume_name
+####
+    openstack availability zone list
+####
+    openstack volume delete my-new-volume
+####
+Run a shell script at startup
+####
+    dnf install crontabs -y
+####
+    systemctl status crond.service
+    systemctl start crond.service
+    systemctl enable crond.service
+####
+    chmod +x /home/user/startup.sh
+####
+Setup Jobs a crontab for it:
 crontab -l
 crontab -e
 @reboot  /home/user/startup.sh
