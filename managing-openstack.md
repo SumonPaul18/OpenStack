@@ -103,6 +103,19 @@ Restart Nova services.
 ####
     openstack-service status cinder
 ####
+List the Compute services:
+####
+    openstack compute service list
+####
+Disable a nova service:
+####
+    openstack compute service set --disable --disable-reason "trial log" compute nova-compute
+####
+Enable the service:
+####
+    openstack compute service set --enable compute nova-compute
+
+####
     systemctl start neutron-metadata-agent.service
 ####
     systemctl enable neutron-metadata-agent.service
@@ -160,7 +173,15 @@ Restart Nova services.
 ####
     systemctl restart openstack-nova-compute.service
 ####
-    
+#
+#### Reboot an Instance
+Soft Reboot an Instance
+####
+    openstack server reboot SERVER/ID
+####
+Hard Reboot an Instance
+####
+    openstack server reboot --hard SERVER/ID
 ################
 ###    Integrade OpenStack Cinder with NFS Storage
 ####
@@ -210,7 +231,8 @@ Restart Nova services.
 Deatch Volume of OpenStack Instance
 ####
     openstack volume list
-#openstack volume set --state available --detached cdd25f1a-f09c-43fb-bde4-a3c6e80d33b8
+####
+Example: openstack volume set --state available --detached cdd25f1a-f09c-43fb-bde4-a3c6e80d33b8
 ####
     openstack volume set --state available --detached volume_id/volume_name
 ####
@@ -229,33 +251,42 @@ Run a shell script at startup
     chmod +x /home/user/startup.sh
 ####
 Setup Jobs a crontab for it:
-crontab -l
-crontab -e
-@reboot  /home/user/startup.sh
-
-#crontab -e '*/5 * * * * /path/to/your/script.sh'
-
-crontab -l | grep -v '^$' ; echo '@reboot /root/build-openstack.sh' | crontab -
-
-
-
-#Deleting an existing job/task in Crontab
-
-#delete all jobs/tasks
-#crontab -r
-
-#remove the specific entry
+####
+List of Crontab Jobs
+    crontab -l
+####
+Adding/Edit jobs in Crontab
+####
+    crontab -e
+    @reboot  /home/user/startup.sh
+####
+Adding a jobs in Crontab using CLI
+####
+    crontab -e '*/5 * * * * /path/to/your/script.sh'
+####
+    crontab -l | grep -v '^$' ; echo '@reboot /root/build-openstack.sh' | crontab -
+####
+Deleting an existing job/task in Crontab
+Delete all jobs/tasks
+####
+    crontab -r
+####
+Remove the specific entry
 crontab -l | grep -v '<SPECIFICS OF YOUR SCRIPT HERE>' | crontab -
-crontab -l | grep -v '* * * * * /usr/local/bin/download_weather.py' | crontab -
+####
+    crontab -l | grep -v '* * * * * /usr/local/bin/download_weather.py' | crontab -
+####
+Install and Use Screen in Linux
+####
+    dnf install screen -y
+    screen –version
+    screen -S Openstack
+    screen -ls
+    screen -r OpenStack/ID  
 
-#Install and Use Screen in Linux
-
-dnf install screen -y
-screen –version
-screen -S Openstack
-screen -ls
-screen -r 2898.upgrade  
-
+#
+#
+### Configure OpenStack Instances Autostart after reboot
 
 
 
