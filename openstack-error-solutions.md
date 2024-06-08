@@ -34,3 +34,28 @@ Show nova-compute.log
 <b> 4. Error:</b> OpenStack-Exceeded-Maximum-Number-Of-Retries-Exhausted-All-Hosts-Available-For-Retrying-Build-Failures-For-Instance.
 ####
 <i>Refference:</i> https://www.informaticar.net/openstack-exceeded-maximum-number-of-retries-exhausted-all-hosts-available-for-retrying-build-failures-for-instance/
+####
+    tail -f /var/log/cinder/volume.log
+####
+    tail -f /var/log/nova/nova-conductor.log
+####
+<b> 5. Error:</b> NoValidHost: No valid host was found. There are not enough hosts available
+####
+Solution:<br>
+https://stackoverflow.com/questions/45511739/novalidhost-no-valid-host-was-found-there-are-not-enough-hosts-available
+####
+Edit /etc/nova/nova.conf in all the compute node and modify as per your application requirement .
+####
+    nano /etc/nova/nova.conf
+####
+Double of Physical Core can be used for total Instance <br>
+Double of Total Memory can be used for total Instance
+####
+    cpu_allocation_ratio = 2.0
+    ram_allocation_ratio = 2.0     
+####
+Restart Nova and Nova-Scheduler in all the Compute Node
+####
+    systemctl restart openstack-nova-*
+    systemctl restart openstack-nova-scheduler.service
+
