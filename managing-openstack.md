@@ -291,7 +291,7 @@ Open Nova configuration file
 ####
     nano /etc/nova/nova.conf
 ####
-Add below line under the [DEFAULT] section:
+Add below line under the [DEFAULT] section: /n
 By Default we find #resume_guests_state_on_host_boot = False  (So, we need to make it Uncomment and True).
 ####
     resume_guests_state_on_host_boot = True
