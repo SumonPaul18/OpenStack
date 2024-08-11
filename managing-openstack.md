@@ -4,9 +4,11 @@ Reference:
 - https://kimizhang.wordpress.com/2015/02/12/nfs-backend-for-openstack-glancecinderinstance-store/
 - https://www.server-world.info/en/note?os=CentOS_7&p=openstack_train2&f=10
 - https://access.redhat.com/articles/1323213
-
 #
-
+### Managing OpenStack, Using OpenStack Cli
+Reference: 
+- https://docs.redhat.com/en/documentation/red_hat_openstack_platform/17.0/html/creating_and_managing_instances/assembly_providing-public-access-to-an-instance_instances#proc_creating-an-instance-with-ssh-access_instances
+#
 ### Install OpenStack client on AlmaLinux
 
 ####
