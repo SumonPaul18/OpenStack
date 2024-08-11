@@ -9,6 +9,13 @@ Reference:
 Reference: 
 - https://docs.redhat.com/en/documentation/red_hat_openstack_platform/17.0/html/creating_and_managing_instances/assembly_providing-public-access-to-an-instance_instances#proc_creating-an-instance-with-ssh-access_instances
 #
+### How to install OpenStackClient for Linux
+Reference:
+- https://destine-data-lake-docs.data.destination-earth.eu/en/latest/openstackcli/How-to-install-OpenStackClient-for-Linux.html
+### OpenStack Shared File Systems
+https://docs.openstack.org/project-install-guide/shared-file-systems/newton/install-controller-rdo.html
+### Magnum Installation Guide
+https://docs.openstack.org/magnum/2024.1/install/install-rdo.html
 ### Install OpenStack client on AlmaLinux
 
 ####
