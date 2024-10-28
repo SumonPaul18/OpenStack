@@ -61,13 +61,13 @@ You can integrate external storage solutions with OpenStack using the Cinder ser
 - **Automatic Backup**: Use Cinder's backup feature and automate with cron jobs or scheduling services.
 - **External Storage**: Configure Cinder to use external storage backends like NFS, Ceph, etc.
 
-Reference:
-(1) Safeguarding Your OpenStack Instance: Complete Guide to ... - Superuser. https://superuser.openinfra.dev/articles/safeguarding-your-openstack-instance-complete-guide-to-manually-backing-up-ephemeral-and-block-storage/.
+#### Reference:
+(1) [Safeguarding Your OpenStack Instance: Complete Guide to](https://superuser.openinfra.dev/articles/safeguarding-your-openstack-instance-complete-guide-to-manually-backing-up-ephemeral-and-block-storage/)
 
-(2) Manage volumes - OpenStack. https://docs.openstack.org/cinder/rocky/cli/cli-manage-volumes.html.
+(2) [Manage volumes - OpenStack](https://docs.openstack.org/cinder/rocky/cli/cli-manage-volumes.html)
 
-(3) Chapter 2. Block Storage and Volumes - Red Hat. https://docs.redhat.com/en/documentation/red_hat_openstack_platform/11/html/storage_guide/ch-cinder.
+(3) [Chapter 2. Block Storage and Volumes - Red Hat](https://docs.redhat.com/en/documentation/red_hat_openstack_platform/11/html/storage_guide/ch-cinder)
 
-(4) Back up and restore volumes and snapshots — cinder 25.1.0 ... - OpenStack. https://docs.openstack.org/cinder/latest/admin/volume-backups.html.
+(4) [Back up and restore volumes and snapshots — cinder 25.1.0](https://docs.openstack.org/cinder/latest/admin/volume-backups.html)
 
-(5) Back up and restore volumes and snapshots - OpenStack. https://docs.openstack.org/cinder/wallaby/admin/blockstorage-volume-backups.html.
+(5) [Back up and restore volumes and snapshots](https://docs.openstack.org/cinder/wallaby/admin/blockstorage-volume-backups.html)
