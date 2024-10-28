@@ -2,9 +2,9 @@
 
 ### 1. Where are instance volumes stored?
 
-When you create an instance in OpenStack without selecting "create new volume," the instance uses ephemeral storage. This storage is temporary and is deleted when the instance is terminated. The ephemeral storage is typically located in the `/var/lib/nova/instances` directory on the compute node¹(https://superuser.openinfra.dev/articles/safeguarding-your-openstack-instance-complete-guide-to-manually-backing-up-ephemeral-and-block-storage/).
+When you create an instance in OpenStack without selecting `create new volume,` the instance uses ephemeral storage. This storage is temporary and is deleted when the instance is terminated. The ephemeral storage is typically located in the `/var/lib/nova/instances` directory on the compute node.
 
-For persistent storage, OpenStack uses the Cinder service to manage volumes. These volumes are stored on block storage devices and can be attached to instances. By default, Cinder uses LVM (Logical Volume Manager) as the backend, but you can configure it to use other storage backends like Ceph, NFS, or third-party storage solutions²(https://docs.openstack.org/cinder/rocky/cli/cli-manage-volumes.html)³(https://docs.redhat.com/en/documentation/red_hat_openstack_platform/11/html/storage_guide/ch-cinder).
+For persistent storage, OpenStack uses the Cinder service to manage volumes. These volumes are stored on block storage devices and can be attached to instances. By default, Cinder uses LVM (Logical Volume Manager) as the backend, but you can configure it to use other storage backends like Ceph, NFS, or third-party storage solutions.
 
 ### 2. How to automatically backup instance volumes?
 
@@ -61,9 +61,13 @@ You can integrate external storage solutions with OpenStack using the Cinder ser
 - **Automatic Backup**: Use Cinder's backup feature and automate with cron jobs or scheduling services.
 - **External Storage**: Configure Cinder to use external storage backends like NFS, Ceph, etc.
 
-Source: Conversation with Copilot, 10/28/2024
+Reference:
 (1) Safeguarding Your OpenStack Instance: Complete Guide to ... - Superuser. https://superuser.openinfra.dev/articles/safeguarding-your-openstack-instance-complete-guide-to-manually-backing-up-ephemeral-and-block-storage/.
+
 (2) Manage volumes - OpenStack. https://docs.openstack.org/cinder/rocky/cli/cli-manage-volumes.html.
+
 (3) Chapter 2. Block Storage and Volumes - Red Hat. https://docs.redhat.com/en/documentation/red_hat_openstack_platform/11/html/storage_guide/ch-cinder.
+
 (4) Back up and restore volumes and snapshots — cinder 25.1.0 ... - OpenStack. https://docs.openstack.org/cinder/latest/admin/volume-backups.html.
+
 (5) Back up and restore volumes and snapshots - OpenStack. https://docs.openstack.org/cinder/wallaby/admin/blockstorage-volume-backups.html.
