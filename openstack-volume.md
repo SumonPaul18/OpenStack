@@ -14,7 +14,7 @@ To automatically backup instance volumes in OpenStack, you can use the Cinder se
    ```bash
    openstack volume backup create --name <backup_name> <volume_id>
    ```
-   You can also create incremental backups by adding the `--incremental` flag⁴(https://docs.openstack.org/cinder/latest/admin/volume-backups.html)⁵(https://docs.openstack.org/cinder/wallaby/admin/blockstorage-volume-backups.html).
+   You can also create incremental backups by adding the `--incremental` flag.
 
 2. **Restore a Backup**:
    ```bash
