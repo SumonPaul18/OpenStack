@@ -242,7 +242,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
 
     openstack project create --domain default --description "Service Project" service
     openstack project create --domain default --description "Demo Project" demo
-    openstack user create --domain default --password DEMO_PASS demo
+    openstack user create --domain default --password openstack#123 demo
     openstack role add member --project demo --user demo
     ```
 
