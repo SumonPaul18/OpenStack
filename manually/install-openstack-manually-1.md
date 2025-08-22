@@ -311,7 +311,7 @@ Glance ভার্চুয়াল মেশিন ইমেজ সংরক�
   * **ডাটাবেজ সিঙ্ক:**
 
     ```bash
-    sudo su -s /bin/sh -c "glance-manage db sync" glance
+    sudo su -s /bin/sh -c "glance-manage db_sync" glance
     ```
 
   * **সার্ভিস রিস্টার্ট:**
@@ -562,14 +562,14 @@ Neutron OpenStack-এর নেটওয়ার্কিং সার্ভি
     `[linux_bridge]` সেকশনে:
 
     ```
-    physical_interface_mappings = provider:enp0s8 # আপনার ডেটা নেটওয়ার্ক ইন্টারফেসের নাম
+    physical_interface_mappings = provider:enp0s8 
     ```
 
     `[vxlan]` সেকশনে:
 
     ```
     enable_vxlan = True
-    local_ip = 192.168.0.63 # আপনার controller নোডের ম্যানেজমেন্ট IP
+    local_ip = 192.168.0.63
     l2_population = True
     ```
 
