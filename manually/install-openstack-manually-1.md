@@ -190,7 +190,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
   * **ডাটাবেজ সিঙ্ক:**
 
     ```bash
-    sudo su -s /bin/sh -c "keystone-manage db sync" keystone
+    sudo su -s /bin/sh -c "keystone-manage db_sync" keystone
     ```
 
   * **ফার্নেট কী তৈরি:**
