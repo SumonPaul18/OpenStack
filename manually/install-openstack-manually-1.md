@@ -160,7 +160,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
     ```bash
     sudo mysql -u root -p
     CREATE DATABASE keystone;
-    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'openstack#123'; # openstack#123 এর বদলে একটি শক্তিশালী পাসওয়ার্ড দিন
+    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'openstack#123';
     GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'openstack#123';
     FLUSH PRIVILEGES;
     EXIT;
