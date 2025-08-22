@@ -255,8 +255,8 @@ Glance ভার্চুয়াল মেশিন ইমেজ সংরক�
     ```bash
     sudo mysql -u root -p
     CREATE DATABASE glance;
-    GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'GLANCE_DBPASS';
-    GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'GLANCE_DBPASS';
+    GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'openstack#123';
     FLUSH PRIVILEGES;
     EXIT;
     ```
@@ -281,7 +281,7 @@ Glance ভার্চুয়াল মেশিন ইমেজ সংরক�
     `[database]` সেকশনে (উভয় ফাইলে):
 
     ```
-    connection = mysql+pymysql://glance:GLANCE_DBPASS@controller/glance
+    connection = mysql+pymysql://glance:openstack#123@controller/glance
     ```
 
     `[glance_store]` সেকশনে (glance-api.conf):
