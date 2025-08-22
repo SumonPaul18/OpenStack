@@ -215,7 +215,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
 
     ```bash
     export OS_USERNAME=admin
-    export OS_PASSWORD=ADMIN_PASS # আপনার পছন্দের অ্যাডমিন পাসওয়ার্ড দিন
+    export OS_PASSWORD=openstack#123
     export OS_PROJECT_NAME=admin
     export OS_USER_DOMAIN_NAME=Default
     export OS_PROJECT_DOMAIN_NAME=Default
@@ -236,7 +236,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
     ```bash
     openstack domain create --description "An Example Domain" example
     openstack project create --domain default --description "Admin Project" admin
-    openstack user create --domain default --password ADMIN_PASS admin
+    openstack user create --domain default --password openstack#123 admin
     openstack role create admin
     openstack grant role admin --project admin --user admin
 
