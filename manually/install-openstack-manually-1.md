@@ -147,7 +147,7 @@ sudo apt install rabbitmq-server -y
 **RabbitMQ ব্যবহারকারী তৈরি:**
 
 ```bash
-sudo rabbitmqctl add_user openstack RABBITMQ_PASS # RABBITMQ_PASS এর বদলে একটি শক্তিশালী পাসওয়ার্ড দিন
+sudo rabbitmqctl add_user openstack openstack#123 # openstack#123 এর বদলে একটি শক্তিশালী পাসওয়ার্ড দিন
 sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 ```
 
@@ -160,8 +160,8 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
     ```bash
     sudo mysql -u root -p
     CREATE DATABASE keystone;
-    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'KEYSTONE_DBPASS'; # KEYSTONE_DBPASS এর বদলে একটি শক্তিশালী পাসওয়ার্ড দিন
-    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'KEYSTONE_DBPASS';
+    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'openstack#123'; # openstack#123 এর বদলে একটি শক্তিশালী পাসওয়ার্ড দিন
+    GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'openstack#123';
     FLUSH PRIVILEGES;
     EXIT;
     ```
@@ -178,7 +178,7 @@ Keystone OpenStack-এর সমস্ত পরিষেবা এবং ব্
     `[database]` সেকশনে:
 
     ```
-    connection = mysql+pymysql://keystone:KEYSTONE_DBPASS@controller/keystone
+    connection = mysql+pymysql://keystone:openstack#123@controller/keystone
     ```
 
     `[token]` সেকশনে:
@@ -384,7 +384,7 @@ Nova ভার্চুয়াল মেশিনের জীবনচক্�
     `[DEFAULT]` সেকশনে:
 
     ```
-    transport_url = rabbit://openstack:RABBITMQ_PASS@controller
+    transport_url = rabbit://openstack:openstack#123@controller
     my_ip = 192.168.0.63 # আপনার controller নোডের ম্যানেজমেন্ট IP
     use_neutron = True
     firewall_driver = nova.virt.firewall.NoopFirewallDriver
@@ -492,7 +492,7 @@ Neutron OpenStack-এর নেটওয়ার্কিং সার্ভি
     core_plugin = ml2
     service_plugins = router
     allow_overlapping_ips = True
-    transport_url = rabbit://openstack:RABBITMQ_PASS@controller
+    transport_url = rabbit://openstack:openstack#123@controller
     auth_strategy = keystone
     notify_nova_on_port_status_changes = True
     notify_nova_on_security_group_changes = True
@@ -728,7 +728,7 @@ Horizon হচ্ছে OpenStack-এর ওয়েব-ভিত্তিক �
     `[DEFAULT]` সেকশনে:
 
     ```
-    transport_url = rabbit://openstack:RABBITMQ_PASS@controller
+    transport_url = rabbit://openstack:openstack#123@controller
     my_ip = 10.0.0.11 # এই কম্পিউট নোডের ম্যানেজমেন্ট IP (যেমন compute1 এর জন্য)
     use_neutron = True
     firewall_driver = nova.virt.firewall.NoopFirewallDriver
@@ -803,7 +803,7 @@ Horizon হচ্ছে OpenStack-এর ওয়েব-ভিত্তিক �
     `[DEFAULT]` সেকশনে:
 
     ```
-    transport_url = rabbit://openstack:RABBITMQ_PASS@controller
+    transport_url = rabbit://openstack:openstack#123@controller
     auth_strategy = keystone
     ```
 
