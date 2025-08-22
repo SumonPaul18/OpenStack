@@ -265,7 +265,7 @@ Glance ভার্চুয়াল মেশিন ইমেজ সংরক�
 
     ```bash
     source admin-openrc
-    openstack user create --domain default --password GLANCE_PASS glance
+    openstack user create --domain default --password openstack#123 glance
     openstack role add --project service --user glance admin
     ```
 
@@ -305,7 +305,7 @@ Glance ভার্চুয়াল মেশিন ইমেজ সংরক�
     user_domain_name = Default
     project_name = service
     username = glance
-    password = GLANCE_PASS
+    password = openstack#123
     ```
 
   * **ডাটাবেজ সিঙ্ক:**
@@ -341,13 +341,13 @@ Nova ভার্চুয়াল মেশিনের জীবনচক্�
     sudo mysql -u root -p
     CREATE DATABASE nova_api;
     CREATE DATABASE nova;
-    CREATE DATABASE nova_cell0; # Cell0 ডাটাবেস Nova Cells V2 এর জন্য
-    GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-    GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
-    GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-    GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
-    GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-    GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+    CREATE DATABASE nova_cell0;
+    GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'openstack#123';
+    GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'openstack#123';
     FLUSH PRIVILEGES;
     EXIT;
     ```
@@ -356,7 +356,7 @@ Nova ভার্চুয়াল মেশিনের জীবনচক্�
 
     ```bash
     source admin-openrc
-    openstack user create --domain default --password NOVA_PASS nova
+    openstack user create --domain default --password openstack#123 nova
     openstack role add --project service --user nova admin
     ```
 
@@ -372,13 +372,13 @@ Nova ভার্চুয়াল মেশিনের জীবনচক্�
     `[api_database]` সেকশনে:
 
     ```
-    connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova_api
+    connection = mysql+pymysql://nova:openstack#123@controller/nova_api
     ```
 
     `[database]` সেকশনে:
 
     ```
-    connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova
+    connection = mysql+pymysql://nova:openstack#123@controller/nova
     ```
 
     `[DEFAULT]` সেকশনে:
@@ -408,7 +408,7 @@ Nova ভার্চুয়াল মেশিনের জীবনচক্�
     user_domain_name = Default
     project_name = service
     username = nova
-    password = NOVA_PASS
+    password = openstack#123
     ```
 
     `[vnc]` সেকশনে:
@@ -523,7 +523,7 @@ Neutron OpenStack-এর নেটওয়ার্কিং সার্ভি
     region_name = RegionOne
     project_name = service
     username = nova
-    password = NOVA_PASS
+    password = openstack#123
     ```
 
     `/etc/neutron/plugins/ml2/ml2_conf.ini` ফাইলটি এডিট করুন।
@@ -752,7 +752,7 @@ Horizon হচ্ছে OpenStack-এর ওয়েব-ভিত্তিক �
     user_domain_name = Default
     project_name = service
     username = nova
-    password = NOVA_PASS
+    password = openstack#123
     ```
 
     `[vnc]` সেকশনে:
