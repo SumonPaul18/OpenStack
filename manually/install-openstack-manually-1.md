@@ -1,6 +1,6 @@
 -----
 
-আপনার হোম ল্যাবে উবুন্টু ওএস-এ OpenStack ম্যানুয়ালি ইনস্টল করার জন্য বিস্তারিত ধাপগুলো নিচে দেওয়া হলো। যেহেতু আপনি DevStack বা Packstack ব্যবহার করতে চাচ্ছেন না এবং প্রথমে একটি মেশিনে ইনস্টল করে পরে অন্য মেশিনে তা প্রসারিত করতে চান, তাই এটি একটি দীর্ঘ প্রক্রিয়া হবে।
+আপনার হোম ল্যাবে Ubuntu OS এ OpenStack ম্যানুয়ালি ইনস্টল করার জন্য বিস্তারিত ধাপগুলো নিচে দেওয়া হলো। প্রথমে একটি মেশিনে ইনস্টল করে পরে অন্য মেশিনে তা প্রসারিত করতে চান, তাই এটি একটি দীর্ঘ প্রক্রিয়া হবে।
 
 ## OpenStack ইনস্টলেশনের পূর্বশর্ত এবং প্রস্তুতি
 
@@ -30,16 +30,16 @@
 
   * **হোস্টনেম সেটআপ:** প্রতিটি মেশিনের জন্য স্বতন্ত্র হোস্টনেম সেট করুন (যেমন: `controller`, `compute1`, `compute2`)।
 
-    ```bash
     sudo hostnamectl set-hostname <your-hostname>
     # উদাহরণস্বরূপ:
+    ```bash
     sudo hostnamectl set-hostname controller
     ```
 
   * **`/etc/hosts` ফাইল কনফিগারেশন:** প্রতিটি মেশিনের `/etc/hosts` ফাইলে অন্য সব মেশিনের IP অ্যাড্রেস এবং হোস্টনেম যোগ করুন যাতে তারা একে অপরের সাথে নাম ব্যবহার করে যোগাযোগ করতে পারে।
 
+    উদাহরণ: controller নোডে
     ```bash
-    # উদাহরণ: controller নোডে
     127.0.0.1       localhost
     192.168.0.63       controller
     10.0.0.11       compute1
@@ -50,21 +50,27 @@
 
   * **নেটওয়ার্ক কনফিগারেশন:** নেটওয়ার্ক ইন্টারফেসগুলো স্ট্যাটিক IP অ্যাড্রেস ব্যবহার করে কনফিগার করুন। `/etc/netplan/*.yaml` ফাইল এডিট করে এটি করতে পারেন।
 
-    ```yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        enp0s3:
-          dhcp4: no
-          addresses: [192.168.0.63/24]
-          gateway4: 192.168.0.1
-          nameservers:
-            addresses: [8.8.8.8, 8.8.4.4]
-        enp0s8: 
-          dhcp4: no
-          addresses: [192.168.1.10/24]
-    ```
+This is the network config for Ubuntu 24.04 LTS (Noble) 
+```
+nano /etc/netplan/
+```
+```yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp2s0:
+      dhcp4: false
+      addresses:
+        - 192.168.0.88/24
+      routes:
+        - to: default
+          via: 192.168.0.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+```
 
     পরিবর্তনের পর নেটপ্ল্যান এপ্লাই করুন:
 
