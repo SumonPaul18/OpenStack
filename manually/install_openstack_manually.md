@@ -143,10 +143,12 @@ apt install mariadb-server python3-pymysql -y
 ```
 ```
 vi /etc/mysql/mariadb.conf.d/99-openstack.cnf
+
 ```
 ```
-[mysqld] 
+[mysqld]
 bind-address = 192.168.106.15
+
 default-storage-engine = innodb
 innodb_file_per_table = on
 max_connections = 4096
@@ -162,7 +164,32 @@ choose a suitable password [****] for the database root account
 ```
 mysql_secure_installation
 ```
+Type:
+- Enter
+- y
+- y
+- type password
+- y
+- y
+- y
+- y
 
+Now Verifying the mysql 
+```
+mysql -u root -p
+```
+Type mysql password
+Then enter mysql terminal like:
+```
+MariaDB [(none)]>
+
+```
+```
+show databases;
+```
+```
+exit;
+```
 Install and configure rabbitmq-server
 ```
 apt install rabbitmq-server -y
@@ -170,7 +197,12 @@ apt install rabbitmq-server -y
 ```
 service rabbitmq-server restart
 ```
+```
+service rabbitmq-server restart
+```
+```
 rabbitmqctl add_user openstack ubuntu
+```
 ```
 rabbitmqctl add_user openstack openstack
 ```
