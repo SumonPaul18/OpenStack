@@ -356,6 +356,27 @@ Add the myrole role to the myproject project and myuser user:
 ```
 openstack role add --project myproject --user myuser myrole
 ```
+Verify operation
+
+Verify operation of the Identity service before installing other services.
+
+ Note
+
+Perform these commands on the controller node.
+
+Unset the temporary OS_AUTH_URL and OS_PASSWORD environment variable:
+```
+unset OS_AUTH_URL OS_PASSWORD
+```
+As the admin user, request an authentication token:
+```
+openstack --os-auth-url http://controller:5000/v3 \
+  --os-project-domain-name Default --os-user-domain-name Default \
+  --os-project-name admin --os-username admin token issue
+```
+
+
+
 
 - Not yet Finish, Now Have a lot installation and configurations
 
