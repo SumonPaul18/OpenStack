@@ -135,7 +135,7 @@ add-apt-repository cloud-archive:epoxy
 ```
 install openstackclient on both node
 ```
-apt install python3-openstackclient
+apt install python3-openstackclient -y
 ```
 Install and configure SQL Database
 ```
