@@ -721,23 +721,122 @@ sudo service glance-api restart
 
 ---
 
-## ✅ Verification Steps
+# OpenStack Glance Verification Guide (Ubuntu)  
+*Step-by-step instructions to verify the Glance (Image Service) installation in OpenStack 2025.1*
 
-After installation, verify Glance is working:
+After installing and configuring the **Glance** service on the controller node, it’s essential to **verify** that the service is running correctly and can manage images.
 
-### 1. Source Admin Credentials Again
+> ✅ **Supported Version**: OpenStack 2025.1 (Ubuntu)  
+> 📌 This guide assumes Glance was installed using the [Ubuntu installation guide](https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html).
+
+---
+
+## 🔍 Purpose of Verification
+
+This guide helps you:
+- Confirm the Glance service is up and reachable.
+- Verify API endpoints are registered.
+- Upload a test image.
+- Validate that image operations work as expected.
+
+---
+
+## 🧰 Prerequisites
+
+Before verifying Glance:
+- The **Glance service must be installed and configured**.
+- You must have access to the **controller node**.
+- The `admin-openrc` file must be available with correct credentials.
+
+---
+
+## ✅ Step 1: Source Admin Credentials
+
+Load administrative credentials to use OpenStack CLI commands:
 
 ```bash
 . admin-openrc
 ```
 
-### 2. List Available Images (should be empty at first)
+> 💡 This sets environment variables like `OS_USERNAME`, `OS_PASSWORD`, etc.  
+> Ensure the file exists and contains valid admin credentials.
+
+---
+
+## ✅ Step 2: Verify Glance Service Status
+
+Check if the `glance-api` service is running:
+
+```bash
+sudo systemctl status glance-api
+```
+
+✅ **Expected Output**:
+- `active (running)` status
+- No recent errors in logs
+
+🔧 If not running, start it:
+
+```bash
+sudo systemctl start glance-api
+sudo systemctl enable glance-api
+```
+
+---
+
+## ✅ Step 3: List Glance API Endpoints
+
+Ensure the Image service endpoints were created correctly:
+
+```bash
+openstack endpoint list --service glance --interface public
+openstack endpoint list --service glance --interface internal
+openstack endpoint list --service glance --interface admin
+```
+
+✅ **Expected Output**:
+- Three endpoints (`public`, `internal`, `admin`) pointing to `http://controller:9292`
+- All with `enabled=True` and correct `RegionOne`
+
+Example:
+```
++----------------------------------+-----------+--------------+---------------------------+
+| ID                               | Interface | Region       | URL                       |
++----------------------------------+-----------+--------------+---------------------------+
+| 340be3625e9b4239a6415d034e98aace | public    | RegionOne    | http://controller:9292    |
+| a6e4b153c2ae4c919eccfdbb7dceb5d2 | internal  | RegionOne    | http://controller:9292    |
+| 0c37ed58103f4300a84ff125a539032d | admin     | RegionOne    | http://controller:9292    |
++----------------------------------+-----------+--------------+---------------------------+
+```
+
+---
+
+## ✅ Step 4: Verify Glance Service Registration
+
+Check that the `glance` service is registered in OpenStack:
+
+```bash
+openstack service list | grep image
+```
+
+✅ **Expected Output**:
+```
+| 8c2c7f1b9b5049ea9e63757b5533e6d2 | glance | image     |
+```
+
+> If missing, re-run the service creation command from the install guide.
+
+---
+
+## ✅ Step 5: List Available Images
+
+Run the following command to list current images:
 
 ```bash
 openstack image list
 ```
 
-Expected Output:
+✅ **Expected Output**:
 ```
 +----+------+--------+------------------+--------+-------+
 | ID | Name | Status | Server Type      | Schema | Size  |
@@ -745,42 +844,140 @@ Expected Output:
 +----+------+--------+------------------+--------+-------+
 ```
 
-If no errors occur, Glance is running correctly.
+> 🔹 At this stage, the list should be **empty** — that’s normal.
+
+> ❌ If you get an authentication or connection error, double-check:
+- `keystone_authtoken` settings in `/etc/glance/glance-api.conf`
+- Network connectivity to `controller:5000` (Keystone) and `controller:9292` (Glance)
 
 ---
 
-## 🛠 Troubleshooting Tips
+## ✅ Step 6: Download and Upload a Test Image
 
-| Issue | Solution |
-|------|----------|
-| `Connection refused` to database | Ensure MySQL is running and `glance` user has correct privileges |
-| Authentication failures | Double-check `keystone_authtoken` settings and passwords |
-| Service not starting | Check logs: `tail -f /var/log/glance/api.log` |
-| Endpoint not found | Confirm endpoint creation with `openstack endpoint list --service image` |
+Use a small test image (like **CirrOS**) to validate image upload and visibility.
+
+### 1. Download CirrOS Image
+
+```bash
+wget http://download.cirros-cloud.net/0.5.2/cirros-0.5.2-x86_64-disk.img
+```
+
+> 🔁 You can use any version; update the URL accordingly.
 
 ---
 
-## 📚 Next Steps
+### 2. Upload Image to Glance
 
-- Upload your first image:
-  ```bash
-  openstack image create "cirros" \
-    --file cirros-0.5.2-x86_64-disk.img \
-    --disk-format qcow2 --container-format bare --public
-  ```
-- Proceed to install **Nova (Compute Service)** or **Cinder (Block Storage)**.
+```bash
+openstack image create "cirros" \
+  --file cirros-0.5.2-x86_64-disk.img \
+  --disk-format qcow2 \
+  --container-format bare \
+  --public
+```
+
+📌 **Parameters Explained**:
+- `--file`: Path to the image file
+- `--disk-format`: Disk format (`qcow2`, `raw`, `vmdk`, etc.)
+- `--container-format`: Container type (`bare`, `ovf`, etc.)
+- `--public`: Makes the image accessible to all projects
+
+---
+
+### 3. Confirm Image Upload
+
+List images again:
+
+```bash
+openstack image list
+```
+
+✅ **Expected Output**:
+```
++--------------------------------------+--------+--------+------------------+-------------+--------+
+| ID                                   | Name   | Status | Server Type      | Schema      | Size   |
++--------------------------------------+--------+--------+------------------+-------------+--------+
+| 6a51c3d7-4c32-48bd-9a65-85e9a13f8b34 | cirros | active | None             | None        | 12717056 |
++--------------------------------------+--------+--------+------------------+-------------+--------+
+```
+
+> 🔹 The image should be in **`active`** status.
+
+---
+
+## ✅ Step 7: View Image Details (Optional)
+
+Get detailed info about the uploaded image:
+
+```bash
+openstack image show cirros
+```
+
+Sample Output:
+```yaml
+id: 6a51c3d7-4c32-48bd-9a65-85e9a13f8b34
+name: cirros
+status: active
+disk_format: qcow2
+container_format: bare
+size: 12717056
+visibility: public
+```
+
+---
+
+## ✅ Step 8: Verify Image Storage Location (Optional)
+
+If using **local file storage**, confirm the image is saved on disk:
+
+```bash
+ls -la /var/lib/glance/images/
+```
+
+✅ You should see a file matching the image `ID` (e.g., `6a51c3d7-4c32-48bd-9a65-85e9a13f8b34`).
+
+> 🔹 This confirms Glance is writing images to the configured directory.
+
+---
+
+## 🛠 Troubleshooting Common Issues
+
+| Problem | Possible Cause | Solution |
+|-------|----------------|----------|
+| `Unable to establish connection to http://controller:9292` | Glance service not running | Run: `sudo systemctl restart glance-api` |
+| `HTTP 401 Unauthorized` | Incorrect `keystone_authtoken` config | Check password, username, and auth URL in `glance-api.conf` |
+| Image stuck in `queued` or `saving` state | Permission issue on image directory | Ensure `/var/lib/glance/images/` is owned by `glance:glance` |
+| Endpoint not found | Missing or incorrect endpoint | Recreate endpoints using `openstack endpoint create` |
+| `No such file or directory` during upload | Image file not found | Confirm path and permissions on the `.img` file |
+
+Check logs for details:
+
+```bash
+sudo tail -f /var/log/glance/api.log
+```
+
+---
+
+## 🚀 Next Steps
+
+Now that Glance is verified:
+- Proceed to install **Nova (Compute Service)**.
+- Launch your first VM using the uploaded CirrOS image.
+- Test image sharing between projects (if using `shared` visibility).
 
 ---
 
 ## 📎 References
 
-- Official Docs: [https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html](https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html)
-- `oslo.limit` Configuration: [OpenStack oslo.limit Docs](https://docs.openstack.org/oslo.limit/latest/)
+- Official Docs: [https://docs.openstack.org/glance/2025.1/install/verify.html](https://docs.openstack.org/glance/2025.1/install/verify.html)
+- Glance CLI Guide: [OpenStack Image CLI](https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/image.html)
 
 ---
 
-✅ **Congratulations!** You've successfully installed and configured the OpenStack Glance service on Ubuntu.
+✅ **Congratulations!** You’ve successfully verified the Glance installation. The Image Service is ready for production use.
+
 ---
+
 
 - Not yet Finish, Now Have a lot installation and configurations
 
