@@ -1411,6 +1411,871 @@ Now that the Placement service is verified:
 
 ---
 
+# OpenStack Nova (Compute) Controller Node Installation Guide for Ubuntu  
+**Simple & Step-by-Step Deployment Guide**  
+
+> ✅ Based on: [OpenStack Nova Install Guide (2025.1)](https://docs.openstack.org/nova/2025.1/install/controller-install-ubuntu.html)  
+> 🖥️ Role: **Controller Node**  
+> 📦 Distribution: **Ubuntu**  
+> 🔧 Focus: Clear, easy-to-follow instructions with explanations
+
+---
+
+## 🧩 Overview
+
+This guide walks you through installing and configuring the **Nova (Compute) service** on the **controller node** in an OpenStack environment.
+
+Nova manages virtual machines (VMs), including creation, scheduling, and lifecycle management.
+
+🔧 You will:
+- Set up databases
+- Create service users and endpoints
+- Install Nova components
+- Configure `nova.conf`
+- Sync databases and register cells
+- Start services
+
+> ⚠️ Prerequisites:
+> - MySQL/MariaDB, RabbitMQ, Keystone (Identity), Glance (Image), and Placement services **must already be installed and running**.
+
+---
+
+## 🗄️ Step 2: Create Nova Databases
+
+Connect to your database server and create three databases for Nova.
+
+### 1. Log in to MariaDB/MySQL as root:
+
+```bash
+sudo mysql
+```
+
+### 2. Create databases and grant privileges:
+
+```sql
+CREATE DATABASE nova_api;
+CREATE DATABASE nova;
+CREATE DATABASE nova_cell0;
+
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+```
+
+🔁 Replace `NOVA_DBPASS` with a strong password (e.g., `nova_db_secret`).
+
+### 3. Exit the database:
+
+```sql
+EXIT;
+```
+
+---
+
+## 👤 Step 3: Create Nova Service User and Endpoints
+
+### 1. Create the `nova` user in Keystone
+
+```bash
+openstack user create --domain default --password-prompt nova
+```
+
+When prompted, enter a password (e.g., `NOVA_PASS`) and confirm it.
+
+✅ Example Output:
+```
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| name                | nova                             |
+| ...                 | ...                              |
++---------------------+----------------------------------+
+```
+
+### 2. Assign the `admin` role to the `nova` user
+
+```bash
+openstack role add --project service --user nova admin
+```
+
+> 🟡 No output means success.
+
+### 3. Register the Nova service in the catalog
+
+```bash
+openstack service create --name nova --description "OpenStack Compute" compute
+```
+
+✅ Expected Output:
+```
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+```
+
+### 4. Create API Endpoints
+
+```bash
+openstack endpoint create --region RegionOne compute public http://controller:8774/v2.1
+openstack endpoint create --region RegionOne compute internal http://controller:8774/v2.1
+openstack endpoint create --region RegionOne compute admin http://controller:8774/v2.1
+```
+
+> 🔔 Port `8774/v2.1` is the default for Nova API. Ensure `controller` resolves correctly.
+
+---
+
+## 📦 Step 4: Install Nova Packages
+
+Install required Nova components on the **controller node**:
+
+```bash
+sudo apt update
+sudo apt install nova-api nova-conductor nova-novncproxy nova-scheduler
+```
+
+🛠️ Components installed:
+- `nova-api`: REST API endpoint
+- `nova-conductor`: Mediates DB interactions
+- `nova-scheduler`: Decides where to run VMs
+- `nova-novncproxy`: Provides VNC console access
+
+---
+
+## ⚙️ Step 5: Configure `nova.conf`
+
+Edit the main Nova configuration file:
+
+```bash
+sudo nano /etc/nova/nova.conf
+```
+
+Add or modify the following sections:
+
+### 1. Database Access
+
+```ini
+[api_database]
+connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova_api
+
+[database]
+connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova
+```
+
+🔁 Replace `NOVA_DBPASS` with the database password you set earlier.
+
+---
+
+### 2. RabbitMQ Message Queue
+
+```ini
+[DEFAULT]
+transport_url = rabbit://openstack:RABBIT_PASS@controller:5672/
+```
+
+🔁 Replace `RABBIT_PASS` with the password for the `openstack` user in RabbitMQ.
+
+---
+
+### 3. Keystone Authentication
+
+```ini
+[api]
+auth_strategy = keystone
+
+[keystone_authtoken]
+www_authenticate_uri = http://controller:5000/
+auth_url = http://controller:5000/
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = nova
+password = NOVA_PASS
+```
+
+🔁 Replace `NOVA_PASS` with the password you chose for the `nova` user.
+
+> ❗ **Important**: Comment out or remove any other lines in `[keystone_authtoken]`.
+
+---
+
+### 4. Service User Token (Optional but Recommended)
+
+```ini
+[service_user]
+send_service_user_token = true
+auth_url = http://controller:5000/v3
+auth_strategy = keystone
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = nova
+password = NOVA_PASS
+```
+
+🔁 Use same `NOVA_PASS` as above.
+
+---
+
+### 5. Controller Node IP Address
+
+```ini
+[DEFAULT]
+my_ip = 10.0.0.11
+```
+
+🔁 Replace `10.0.0.11` with the **management network IP** of your controller node.
+
+---
+
+### 6. VNC Configuration
+
+```ini
+[vnc]
+enabled = true
+server_listen = $my_ip
+server_proxyclient_address = $my_ip
+```
+
+This allows VNC console access via the dashboard.
+
+---
+
+### 7. Glance (Image Service) Access
+
+```ini
+[glance]
+api_servers = http://controller:9292
+```
+
+Ensure Glance is reachable at port `9292`.
+
+---
+
+### 8. Lock Path for Concurrency
+
+```ini
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+```
+
+Create the directory if needed:
+
+```bash
+sudo mkdir -p /var/lib/nova/tmp
+```
+
+---
+
+### 9. Placement Service Access
+
+```ini
+[placement]
+region_name = RegionOne
+project_domain_name = Default
+project_name = service
+auth_type = password
+user_domain_name = Default
+auth_url = http://controller:5000/v3
+username = placement
+password = PLACEMENT_PASS
+```
+
+🔁 Replace `PLACEMENT_PASS` with the password you set for the `placement` user.
+
+> ❗ Remove or comment out any other options in `[placement]`.
+
+---
+
+### ✅ Final Notes on Configuration
+- An ellipsis (`...`) in config examples means keep existing defaults.
+- Do **not** duplicate sections — edit existing ones or add if missing.
+- Avoid mixing old and new configs.
+
+---
+
+## 🛠 Step 6: Populate and Initialize Nova Databases
+
+Run these commands in order:
+
+### 1. Sync the `nova-api` database
+
+```bash
+sudo su -s /bin/sh -c "nova-manage api_db sync" nova
+```
+
+> 🟡 Ignore deprecation warnings.
+
+---
+
+### 2. Register the `cell0` database
+
+```bash
+sudo su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+```
+
+> `cell0` holds failed or deleted instances.
+
+---
+
+### 3. Create `cell1` (Primary Compute Cell)
+
+```bash
+sudo su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+```
+
+✅ Sample Output:
+```
+Created cell with UUID: f690f4fd-2bc5-4f15-8145-db561a7b9d3d
+```
+
+---
+
+### 4. Sync the main Nova database
+
+```bash
+sudo su -s /bin/sh -c "nova-manage db sync" nova
+```
+
+> This sets up schemas for `nova`, `nova_cell0`, and `nova_cell1`.
+
+---
+
+### 5. Verify Cells Are Registered
+
+```bash
+sudo su -s /bin/sh -c "nova-manage cell_v2 list_cells" nova
+```
+
+✅ Expected Output:
+```
++-------+--------------------------------------+----------------------------+----------------------------------------------------+----------+
+| Name  | UUID                                 | Transport URL              | Database Connection                                | Disabled |
++-------+--------------------------------------+----------------------------+----------------------------------------------------+----------+
+| cell0 | 00000000-0000-0000-0000-000000000000 | none:/                     | mysql+pymysql://nova:****@controller/nova_cell0    | False    |
+| cell1 | f690f4fd-2bc5-4f15-8145-db561a7b9d3d | rabbit://openstack@...     | mysql+pymysql://nova:****@controller/nova_cell1    | False    |
++-------+--------------------------------------+----------------------------+----------------------------------------------------+----------+
+```
+
+> 🟢 Success means both `cell0` and `cell1` appear and are **not disabled**.
+
+---
+
+## 🔁 Step 7: Restart Nova Services
+
+Apply all changes by restarting the Nova services:
+
+```bash
+sudo service nova-api restart
+sudo service nova-scheduler restart
+sudo service nova-conductor restart
+sudo service nova-novncproxy restart
+```
+
+> ✅ All services should restart without errors.
+
+---
+
+## ✅ Step 8: Verify Installation
+
+Now that everything is running, verify Nova works.
+
+### 1. List OpenStack services
+
+```bash
+openstack compute service list
+```
+
+You should see:
+- `nova-scheduler`
+- `nova-conductor`
+- `nova-compute` (once compute nodes are added)
+- All services in `UP` state
+
+### 2. Check cells communication (Optional Advanced Test)
+
+```bash
+sudo nova-manage cell_v2 list_hosts
+```
+
+Should show registered compute nodes.
+
+---
+
+## 🛠 Troubleshooting Tips
+
+| Issue | Solution |
+|------|----------|
+| `nova-api` fails to start | Check `keystone_authtoken` settings and password |
+| Database sync errors | Confirm DB connectivity and credentials in `nova.conf` |
+| `cell_v2` command not found | Ensure `nova-conductor` package is installed |
+| 503 Service Unavailable | Make sure Apache/Nginx is running; check `/var/log/nova/*.log` |
+| Host not showing in `list_hosts` | Wait for compute node to register; check firewall and networking |
+
+Check logs:
+```bash
+sudo tail -f /var/log/nova/nova-api.log
+sudo tail -f /var/log/nova/nova-scheduler.log
+```
+
+---
+
+## 📌 Summary Checklist
+
+| Task | Status |
+|------|--------|
+| ☑️ Source admin credentials | ✅ |
+| ☑️ Create `nova_api`, `nova`, `nova_cell0` DBs | ✅ |
+| ☑️ Create `nova` user and endpoints | ✅ |
+| ☑️ Install Nova packages | ✅ |
+| ☑️ Configure `/etc/nova/nova.conf` | ✅ |
+| ☑️ Sync databases and create cells | ✅ |
+| ☑️ Restart services | ✅ |
+| ☑️ Verify with `openstack compute service list` | ✅ |
+
+---
+
+## 🚀 Next Steps
+
+After completing the controller setup:
+
+1. ➡️ [Install Nova Compute Service](https://docs.openstack.org/nova/2025.1/install/compute-install-ubuntu.html) on **compute nodes**
+2. ➡️ Install and configure **Neutron (Networking)**
+3. ➡️ Launch your first instance using:
+   ```bash
+   openstack server create ...
+   ```
+
+---
+
+🔗 **Official Docs**:  
+[Nova Controller Installation (Ubuntu)](https://docs.openstack.org/nova/2025.1/install/controller-install-ubuntu.html)
+
+🎯 You're now ready to manage compute resources in OpenStack!
+
+---
+
+---
+# OpenStack Nova (Compute) Service Installation Guide for Ubuntu  
+**Simple & Step-by-Step Guide for Compute Nodes**
+
+> ✅ Based on: [OpenStack Nova Compute Install Guide (2025.1)](https://docs.openstack.org/nova/2025.1/install/compute-install-ubuntu.html)  
+> 🖥️ Role: **Compute Node**  
+> 📦 Distribution: **Ubuntu**  
+> 🔧 Focus: Easy-to-follow, beginner-friendly instructions
+
+---
+
+## 🧩 Overview
+
+This guide walks you through installing and configuring the **Nova Compute service** (`nova-compute`) on a **compute node** in your OpenStack environment.
+
+The compute node runs virtual machines (VMs) using **KVM/QEMU** and connects to the controller for management.
+
+🔧 You will:
+- Install `nova-compute` package
+- Configure `/etc/nova/nova.conf`
+- Enable hardware acceleration (KVM) or fallback to QEMU
+- Start the service
+- Register the compute node from the controller
+
+> ⚠️ Prerequisites:
+> - Controller node must have **Keystone, Glance, Placement, and Nova (controller services)** already installed and working.
+> - Network connectivity between controller and compute nodes.
+> - NTP synchronized on all nodes.
+
+---
+
+## 📦 Step 1: Install Nova Compute Package
+
+Log in to your **compute node** (e.g., `compute1`) and install the Nova compute service.
+
+```bash
+sudo apt update
+sudo apt install nova-compute
+```
+
+🛠️ This installs:
+- `nova-compute`: The main service that manages VMs
+- Dependencies like `libvirt`, `qemu`, and `kvm`
+
+---
+
+## ⚙️ Step 2: Configure `nova.conf`
+
+Edit the main Nova configuration file:
+
+```bash
+sudo nano /etc/nova/nova.conf
+```
+
+Update the following sections:
+
+### 1. RabbitMQ Message Queue
+
+In the `[DEFAULT]` section:
+
+```ini
+[DEFAULT]
+transport_url = rabbit://openstack:RABBIT_PASS@controller
+```
+
+🔁 Replace `RABBIT_PASS` with the password you set for the `openstack` user in RabbitMQ.
+
+> ✅ Example: If your RabbitMQ password is `rabbit_secret`, use:
+> ```
+> transport_url = rabbit://openstack:rabbit_secret@controller
+> ```
+
+---
+
+### 2. Keystone Authentication
+
+In the `[api]` and `[keystone_authtoken]` sections:
+
+```ini
+[api]
+auth_strategy = keystone
+
+[keystone_authtoken]
+www_authenticate_uri = http://controller:5000/
+auth_url = http://controller:5000/
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = nova
+password = NOVA_PASS
+```
+
+🔁 Replace `NOVA_PASS` with the password you chose for the `nova` user in Keystone.
+
+> ❗ Remove or comment out any other lines in `[keystone_authtoken]`.
+
+---
+
+### 3. Service User Token (Optional but Recommended)
+
+```ini
+[service_user]
+send_service_user_token = true
+auth_url = http://controller:5000/v3
+auth_strategy = keystone
+auth_type = password
+project_domain_name = Default
+project_name = service
+user_domain_name = Default
+username = nova
+password = NOVA_PASS
+```
+
+🔁 Use the same `NOVA_PASS` as above.
+
+---
+
+### 4. Management IP Address
+
+In the `[DEFAULT]` section:
+
+```ini
+[DEFAULT]
+my_ip = 10.0.0.31
+```
+
+🔁 Replace `10.0.0.31` with the **management network IP address** of your compute node.
+
+> ✅ Example: First compute node → `10.0.0.31`, second → `10.0.0.32`, etc.
+
+---
+
+### 5. VNC Console Access
+
+In the `[vnc]` section:
+
+```ini
+[vnc]
+enabled = true
+server_listen = 0.0.0.0
+server_proxyclient_address = $my_ip
+novncproxy_base_url = http://controller:6080/vnc_auto.html
+```
+
+📌 Explanation:
+- `server_listen = 0.0.0.0`: Listens on all interfaces
+- `novncproxy_base_url`: Where users access VM consoles via browser
+
+> 🔁 If `controller` hostname is not resolvable from client machines, replace `controller` with its IP (e.g., `http://10.0.0.11:6080/vnc_auto.html`)
+
+---
+
+### 6. Glance (Image Service) Access
+
+```ini
+[glance]
+api_servers = http://controller:9292
+```
+
+Ensure the Image service is reachable.
+
+---
+
+### 7. Lock Path for Concurrency
+
+```ini
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+```
+
+Create the directory if missing:
+
+```bash
+sudo mkdir -p /var/lib/nova/tmp
+```
+
+---
+
+### 8. Placement Service Access
+
+```ini
+[placement]
+region_name = RegionOne
+project_domain_name = Default
+project_name = service
+auth_type = password
+user_domain_name = Default
+auth_url = http://controller:5000/v3
+username = placement
+password = PLACEMENT_PASS
+```
+
+🔁 Replace `PLACEMENT_PASS` with the password you set for the `placement` user.
+
+> ❗ Comment out or remove any other options in `[placement]`.
+
+---
+
+## 💡 Step 3: Check for Hardware Virtualization Support
+
+Run this command to check if your CPU supports **hardware acceleration (KVM)**:
+
+```bash
+egrep -c '(vmx|svm)' /proc/cpuinfo
+```
+
+### Interpret the Result:
+
+| Output | Meaning | Action |
+|-------|--------|--------|
+| `1` or higher | ✅ KVM supported | No extra config needed |
+| `0` | ❌ No KVM support | Configure Nova to use **QEMU** |
+
+---
+
+### If No Hardware Support (Output = 0): Use QEMU
+
+Edit the libvirt configuration:
+
+```bash
+sudo nano /etc/nova/nova-compute.conf
+```
+
+Add or modify the `[libvirt]` section:
+
+```ini
+[libvirt]
+virt_type = qemu
+```
+
+> 📝 This tells Nova to use software-based QEMU instead of hardware-accelerated KVM.
+
+---
+
+## 🔁 Step 4: Restart and Enable Nova Compute Service
+
+Apply all changes:
+
+```bash
+sudo service nova-compute restart
+```
+
+Ensure it starts automatically on boot:
+
+```bash
+sudo systemctl enable nova-compute
+```
+
+---
+
+## 🛠 Troubleshooting Tips
+
+### Common Issue: `nova-compute` fails to start
+
+Check the log:
+```bash
+sudo tail -f /var/log/nova/nova-compute.log
+```
+
+#### If you see:
+```
+AMQP server on controller:5672 is unreachable
+```
+
+✅ Fix:
+- Ensure **RabbitMQ is running** on the controller.
+- Open port `5672` on the controller’s firewall:
+
+```bash
+sudo ufw allow from 10.0.0.0/24 to any port 5672
+```
+
+Replace `10.0.0.0/24` with your management network.
+
+Then restart:
+```bash
+sudo service nova-compute restart
+```
+
+---
+
+## ➕ Step 5: Add Compute Node to Cell Database (On Controller)
+
+> 🔧 This step must be done **on the controller node**, not the compute node.
+
+### 1. Source Admin Credentials
+
+```bash
+. admin-openrc
+```
+
+### 2. Verify Compute Service is Running
+
+```bash
+openstack compute service list --service nova-compute
+```
+
+✅ Expected Output:
+```
++----+-----------+--------------+------+---------+-------+----------------------------+
+| ID | Host      | Binary       | Zone | Status  | State | Updated At                 |
++----+-----------+--------------+------+---------+-------+----------------------------+
+|  1 | compute1  | nova-compute | nova | enabled | up    | 2025-04-05T10:00:00.000000 |
++----+-----------+--------------+------+---------+-------+----------------------------+
+```
+
+If state is `down`, check logs and network/firewall.
+
+---
+
+### 3. Discover Compute Hosts
+
+Register the compute node(s) in the cell database:
+
+```bash
+sudo su -s /bin/sh -c "nova-manage cell_v2 discover_hosts --verbose" nova
+```
+
+✅ Sample Output:
+```
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting compute nodes from cell 'cell1': ad5a5985-a719-4567-98d8-8d148aaae4bc
+Found 1 computes in cell: ad5a5985-a719-4567-98d8-8d148aaae4bc
+Checking host mapping for compute host 'compute1': fe58ddc1-1d65-4f87-9456-bc040dc106b3
+Creating host mapping for compute host 'compute1': fe58ddc1-1d65-4f87-9456-bc040dc106b3
+```
+
+> 🟢 Success means your compute node is now registered!
+
+---
+
+### 🔁 Optional: Automate Host Discovery
+
+To avoid running `discover_hosts` manually every time you add a new compute node:
+
+Edit `/etc/nova/nova.conf` on the **controller node**:
+
+```ini
+[scheduler]
+discover_hosts_in_cells_interval = 300
+```
+
+This will automatically discover new compute nodes every 5 minutes.
+
+Then restart services:
+
+```bash
+sudo service nova-scheduler restart
+```
+
+---
+
+## ✅ Final Verification
+
+Back on the **controller node**, verify everything works:
+
+```bash
+openstack compute service list
+```
+
+All services should be `up` and `enabled`.
+
+Also run:
+
+```bash
+sudo nova-manage cell_v2 list_hosts
+```
+
+You should see your compute node listed under `cell1`.
+
+---
+
+## 📌 Summary Checklist
+
+| Task | Status |
+|------|--------|
+| ☑️ Install `nova-compute` on compute node | ✅ |
+| ☑️ Configure `/etc/nova/nova.conf` | ✅ |
+| ☑️ Set correct `my_ip` | ✅ |
+| ☑️ Enable KVM or set `virt_type = qemu` | ✅ |
+| ☑️ Restart `nova-compute` service | ✅ |
+| ☑️ Run `discover_hosts` on controller | ✅ |
+| ☑️ Confirm host appears in `list_hosts` | ✅ |
+
+---
+
+## 🚀 Next Steps
+
+Now that your compute node is online:
+
+1. ➡️ Install and configure **Neutron (Networking)** on controller and compute nodes
+2. ➡️ Upload an image to Glance (e.g., Ubuntu Cloud Image)
+3. ➡️ Create networks, flavors, and launch your first VM!
+
+Example:
+```bash
+openstack server create --image ubuntu2204 --flavor m1.small --network private-net --key-name mykey my-instance
+```
+
+---
+
+🔗 **Official Docs**:  
+[Nova Compute Installation (Ubuntu)](https://docs.openstack.org/nova/2025.1/install/compute-install-ubuntu.html)
+
+🎯 You’re now ready to run virtual machines at scale!
 
 ---
 - Not yet Finish, Now Have a lot installation and configurations
