@@ -1001,7 +1001,7 @@ Before installing the Placement service, you must set up a database, create serv
    $ openstack user create --domain default --password-prompt placement
    ```
 
-   - When prompted, enter a password (e.g., `PLACEMENT_PASS`) and confirm it.
+   - When prompted, enter a password (e.g., `ubuntu`) and confirm it.
 
 3. Add the `placement` user to the `service` project with the `admin` role:
 
@@ -1094,10 +1094,10 @@ project_domain_name = Default
 user_domain_name = Default
 project_name = service
 username = placement
-password = PLACEMENT_PASS
+password = ubuntu
 ```
 
-> 🔁 Replace `PLACEMENT_PASS` with the password you assigned to the `placement` user.
+> 🔁 Replace `ubuntu` with the password you assigned to the `placement` user.
 
 > ⚠️ **Important**:
 > - Comment out or remove any other existing options in `[keystone_authtoken]`.
