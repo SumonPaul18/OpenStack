@@ -385,6 +385,57 @@ openstack --os-auth-url http://controller:5000/v3 \
   --os-project-name myproject --os-username myuser token issue
 
 ```
+Create OpenStack client environment scripts
+
+Create and edit the admin-openrc file and add the following content:
+
+ Note
+
+The OpenStack client also supports using a clouds.yaml file. For more information, see the os-client-config.
+```
+nano admin-openrc
+```
+```
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=ADMIN_PASS
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+```
+Replace ADMIN_PASS with the password you chose for the admin user in the Identity service.
+
+Create and edit the demo-openrc file and add the following content:
+```
+nano demo-openrc
+```
+```
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_NAME=myproject
+export OS_USERNAME=myuser
+export OS_PASSWORD=DEMO_PASS
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+```
+
+Replace DEMO_PASS with the password you chose for the demo user in the Identity service.
+
+Using the scripts
+
+To run clients as a specific project and user, you can simply load the associated client environment script prior to running them. For example:
+
+Load the admin-openrc file to populate environment variables with the location of the Identity service and the admin project and user credentials:
+```
+. admin-openrc
+```
+Request an authentication token:
+```
+openstack token issue
+```
 
 
 
