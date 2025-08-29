@@ -18,7 +18,7 @@ Ubuntu Latest
 
 #Configure IP
 
-nano /etc/network/interfaces
+vi /etc/netplan/50
 
 auto enp0s3
 iface enp0s3 inet static
@@ -43,7 +43,7 @@ ssh-keygen
 #change root password
 passwd root
 
-nano /etc/ssh/sshd_config
+vi /etc/ssh/sshd_config
 #uncomment
 PermitRootLogin yes
 
@@ -57,23 +57,22 @@ ssh-copy-id -i root@compute
 
 apt install chrony -y
 
-nano /etc/chrony/chrony.conf
+vi /etc/chrony/chrony.conf
 
 #comment default ntp server
-server 0.asia.pool.ntp.org
-server 1.asia.pool.ntp.org
-server 2.asia.pool.ntp.org
-server 3.asia.pool.ntp.org
-
+#server 0.asia.pool.ntp.org
+#server 1.asia.pool.ntp.org
+#server 2.asia.pool.ntp.org
+#server 3.asia.pool.ntp.org
 
 #add own ntp server its host ip
-server 192.168.0.106 iburst
-allow 10.0.0.0/24
+server 192.168.0.89 iburst
+allow 192.168.106.15/24
 
 service chrony restart
 
 #go to compute node ntp configure
-nano /etc/chrony/chrony.conf
+vi /etc/chrony/chrony.conf
 
 #comment default ntp server
 #pool 0.ubuntu.pool.ntp.org
@@ -93,63 +92,70 @@ chronyc sources
 > Docs
 > Installation Guide
 > choose version and
-Following [Environment] Option step by step:
+Following [Environment] Section step by step:
 
 ## 1st Create Environment for Install OpenStack ##
 
 #add OpenStack Packages on both node
-
-add-apt-repository cloud-archive:zed
-
+```
+add-apt-repository cloud-archive:epoxy
+```
 #install openstackclient on both node
-
+```
 apt install python3-openstackclient
-
+```
 #Install and configure SQL Database
-
+```
 apt install mariadb-server python3-pymysql -y
-
-nano /etc/mysql/mariadb.conf.d/99-openstack.cnf
-
-[mysqld]
-bind-address = 192.168.106.4
-
+```
+```
+vi /etc/mysql/mariadb.conf.d/99-openstack.cnf
+```
+[mysqld] 
+```
+bind-address = 192.168.106.15
 default-storage-engine = innodb
 innodb_file_per_table = on
 max_connections = 4096
 collation-server = utf8_general_ci
 character-set-server = utf8
-
+```
+```
 service mysql restart
-
+```
+```
 mysql_secure_installation
+```
 
 #Install and configure rabbitmq-server
-
+```
 apt install rabbitmq-server -y
-
+```
+```
 service rabbitmq-server restart
-
+```
 #rabbitmqctl add_user openstack RABBIT_PASS
-
+```
 rabbitmqctl add_user openstack openstack
-
+```
 #Permit configuration, write, and read access for the openstack user
-
+```
 rabbitmqctl set_permissions openstack ".*" ".*" ".*"
-
+```
 #Install and configure memcached
-
+```
 apt install memcached python3-memcache -y
-
+```
 #edit /etc/memcached.conf file
-
-nano /etc/memcached.conf
-
--l 192.168.106.4
-
+```
+vi /etc/memcached.conf
+```
+```
+-l 192.168.106.15
+```
+```
 service memcached restart
-
+```
 ##No need to install Etcd
 
 ## Now Following [ Install OpenStack services ] Option Step by Step ##
@@ -161,37 +167,36 @@ service memcached restart
 #Create Database for keystone
 
 #access mysql
-
+```
 mysql
-
+```
 #login mysql console show: MariaDB [(none)]> 
-
+```
 CREATE DATABASE keystone;
-
+```
+```
 GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' \
-IDENTIFIED BY 'openstack';
-
+IDENTIFIED BY 'ubuntu';
 GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' \
-IDENTIFIED BY 'openstack';
-
+IDENTIFIED BY 'ubuntu';
+EXIT;
+```
 #exit from sql
 
-exit
-
 #Install keystone
-
+```
 apt install keystone -y
-
+```
 #Edit the /etc/keystone/keystone.conf
-
-nano /etc/keystone/keystone.conf
-
+```
+vi /etc/keystone/keystone.conf
+```
 #add new connection under [database] section and comment default connection.
 
 [database]
-
+```
 connection = mysql+pymysql://keystone:openstack@controller/keystone
-
+```
 #[token] section, configure the Fernet token provider.
 
 [token]
@@ -220,7 +225,7 @@ keystone-manage bootstrap --bootstrap-password openstack \
 
 #Edit the /etc/apache2/apache2.conf
 
-nano /etc/apache2/apache2.conf
+vi /etc/apache2/apache2.conf
 
 #add your ServerName under Global configuration section.
 
