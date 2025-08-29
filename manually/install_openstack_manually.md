@@ -1557,7 +1557,7 @@ sudo apt install nova-api nova-conductor nova-novncproxy nova-scheduler
 Edit the main Nova configuration file:
 
 ```bash
-sudo nano /etc/nova/nova.conf
+sudo vi /etc/nova/nova.conf
 ```
 
 Add or modify the following sections:
