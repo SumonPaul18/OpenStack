@@ -465,14 +465,14 @@ Run the following SQL commands:
 CREATE DATABASE glance;
 ```
 
-Grant privileges to the `glance` database user (replace `GLANCE_DBPASS` with a secure password):
+Grant privileges to the `glance` database user (replace `ubuntu` with a secure password):
 
 ```sql
-GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'GLANCE_DBPASS';
-GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'GLANCE_DBPASS';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'ubuntu';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'ubuntu';
 ```
 
-> 🔐 Example: Use `GLANCE_DBPASS=secretpassword123`
+> 🔐 Example: Use `ubuntu=secretpassword123`
 
 Exit the database client:
 
@@ -607,10 +607,10 @@ In the `[database]` section:
 
 ```ini
 [database]
-connection = mysql+pymysql://glance:GLANCE_DBPASS@controller/glance
+connection = mysql+pymysql://glance:ubuntu@controller/glance
 ```
 
-> 🔁 Replace `GLANCE_DBPASS` with the actual password used earlier.
+> 🔁 Replace `ubuntu` with the actual password used earlier.
 
 ---
 
