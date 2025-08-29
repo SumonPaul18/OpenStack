@@ -501,7 +501,7 @@ Load the admin credentials to gain access to administrative OpenStack commands:
 openstack user create --domain default --password-prompt glance
 ```
 
-> Enter and confirm a strong password when prompted (e.g., `GLANCE_PASS`).
+> Enter and confirm a strong password when prompted (e.g., `ubuntu`).
 
 #### Add `admin` role to the `glance` user in the `service` project:
 ```bash
@@ -605,10 +605,10 @@ project_domain_name = Default
 user_domain_name = Default
 project_name = service
 username = glance
-password = GLANCE_PASS
+password = ubuntu
 ```
 
-> 🔁 Replace `GLANCE_PASS` with the password you set for the `glance` user.
+> 🔁 Replace `ubuntu` with the password you set for the `glance` user.
 
 ---
 
@@ -655,13 +655,13 @@ auth_type = password
 user_domain_id = default
 username = glance
 system_scope = all
-password = GLANCE_PASS
+password = ubuntu
 endpoint_id = ENDPOINT_ID
 region_name = RegionOne
 ```
 
 > 🔁 Replace:
-- `GLANCE_PASS`: Password for the `glance` user.
+- `ubuntu`: Password for the `glance` user.
 - `ENDPOINT_ID`: Use the **public image endpoint ID** created earlier.
 
 To find the endpoint ID:
