@@ -550,6 +550,11 @@ openstack endpoint create --region RegionOne \
 
 > ✅ All URLs point to `http://controller:9292` assuming your controller hostname is `controller`.
 
+Verifying openstack endpoint list:
+```
+openstack endpoint list
+```
+
 ---
 
 ### 5. (Optional) Register Quota Limits in Keystone
