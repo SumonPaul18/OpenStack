@@ -272,6 +272,17 @@ Populate the Identity service database.
 ```
 su -s /bin/sh -c "keystone-manage db_sync" keystone
 ```
+Verifying in databases
+```
+mysql
+```
+```
+show databases;
+```
+```
+use keystone;
+``` 
+
 Initialize Fernet key repositories.
 ```
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
