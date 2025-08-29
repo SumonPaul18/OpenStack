@@ -959,7 +959,7 @@ Before installing the Placement service, you must set up a database, create serv
 1. Connect to the MariaDB/MySQL database as the `root` user:
 
    ```bash
-   $ sudo mysql
+   sudo mysql
    ```
 
 2. Create the `placement` database:
@@ -990,7 +990,7 @@ Before installing the Placement service, you must set up a database, create serv
 1. Source the `admin` credentials to get administrative access:
 
    ```bash
-   $ . admin-openrc
+   . admin-openrc
    ```
 
    > Ensure the `admin-openrc` file exists and contains the correct admin credentials.
@@ -998,7 +998,7 @@ Before installing the Placement service, you must set up a database, create serv
 2. Create the `placement` user in OpenStack Identity (Keystone):
 
    ```bash
-   $ openstack user create --domain default --password-prompt placement
+   openstack user create --domain default --password-prompt placement
    ```
 
    - When prompted, enter a password (e.g., `ubuntu`) and confirm it.
@@ -1006,7 +1006,7 @@ Before installing the Placement service, you must set up a database, create serv
 3. Add the `placement` user to the `service` project with the `admin` role:
 
    ```bash
-   $ openstack role add --project service --user placement admin
+   openstack role add --project service --user placement admin
    ```
 
    > This command produces no output on success.
@@ -1014,7 +1014,7 @@ Before installing the Placement service, you must set up a database, create serv
 4. Create the Placement service entry in the service catalog:
 
    ```bash
-   $ openstack service create --name placement --description "Placement API" placement
+   openstack service create --name placement --description "Placement API" placement
    ```
 
    Example Output:
@@ -1033,9 +1033,9 @@ Before installing the Placement service, you must set up a database, create serv
    > Replace `controller` with your controller node’s hostname if different.
 
    ```bash
-   $ openstack endpoint create --region RegionOne placement public http://controller:8778
-   $ openstack endpoint create --region RegionOne placement internal http://controller:8778
-   $ openstack endpoint create --region RegionOne placement admin http://controller:8778
+   openstack endpoint create --region RegionOne placement public http://controller:8778
+   openstack endpoint create --region RegionOne placement internal http://controller:8778
+   openstack endpoint create --region RegionOne placement admin http://controller:8778
    ```
 
    > 🔔 **Note**: The default port is `8778`. Adjust if your environment uses a different port (e.g., `8780`).
@@ -1049,8 +1049,8 @@ Before installing the Placement service, you must set up a database, create serv
 Install the Placement API package using APT:
 
 ```bash
-$ sudo apt update
-$ sudo apt install placement-api
+sudo apt update
+sudo apt install placement-api
 ```
 
 ---
@@ -1060,7 +1060,7 @@ $ sudo apt install placement-api
 Edit the main configuration file:
 
 ```bash
-$ sudo nano /etc/placement/placement.conf
+sudo nano /etc/placement/placement.conf
 ```
 
 #### 1. Configure Database Access
@@ -1110,7 +1110,7 @@ password = ubuntu
 Populate the database with initial schema and data:
 
 ```bash
-$ sudo su -s /bin/sh -c "placement-manage db sync" placement
+sudo su -s /bin/sh -c "placement-manage db sync" placement
 ```
 
 > 🟡 You may see deprecation warnings — these can be safely ignored.
@@ -1124,7 +1124,7 @@ $ sudo su -s /bin/sh -c "placement-manage db sync" placement
 The Placement API runs under Apache. Reload the service to apply changes:
 
 ```bash
-$ sudo service apache2 restart
+sudo service apache2 restart
 ```
 
 ---
@@ -1136,7 +1136,7 @@ To verify that the Placement service is working:
 1. List available services:
 
    ```bash
-   $ openstack service list | grep placement
+   openstack service list | grep placement
    ```
 
    Expected Output:
@@ -1147,13 +1147,13 @@ To verify that the Placement service is working:
 2. List Placement API endpoints:
 
    ```bash
-   $ openstack endpoint list | grep placement
+   openstack endpoint list | grep placement
    ```
 
 3. Test API access (optional):
 
    ```bash
-   $ curl -s http://controller:8778 | python3 -m json.tool
+   curl -s http://controller:8778 | python3 -m json.tool
    ```
 
    You should see a JSON response listing available versions.
@@ -1171,8 +1171,8 @@ To verify that the Placement service is working:
 
 Check logs for errors:
 ```bash
-$ sudo tail -f /var/log/placement/placement-api.log
-$ sudo tail -f /var/log/apache2/error.log
+sudo tail -f /var/log/placement/placement-api.log
+sudo tail -f /var/log/apache2/error.log
 ```
 
 ---
@@ -1217,7 +1217,7 @@ Verify the correct operation of the **Placement service** by:
 Before performing any verification steps, you must authenticate as an administrative user.
 
 ```bash
-$ . admin-openrc
+. admin-openrc
 ```
 
 > 💡 Ensure the `admin-openrc` file exists and contains the correct environment variables (e.g., OS_USERNAME, OS_PASSWORD, etc.). If not available, use an equivalent method to source admin credentials.
@@ -1229,7 +1229,7 @@ $ . admin-openrc
 This command verifies the database schema and checks for potential upgrade issues.
 
 ```bash
-$ placement-status upgrade check
+placement-status upgrade check
 ```
 
 ### ✅ Expected Output (Example):
@@ -1265,7 +1265,7 @@ The `osc-placement` plugin enables OpenStack CLI commands to interact with the P
 ### Option A: Install via pip (Python Package Index)
 
 ```bash
-$ pip3 install osc-placement
+pip3 install osc-placement
 ```
 
 > ✅ Recommended if you're using a virtual environment or don't have distribution packages.
@@ -1273,7 +1273,7 @@ $ pip3 install osc-placement
 ### Option B: Install via Ubuntu/Debian Package
 
 ```bash
-$ sudo apt install python3-osc-placement
+sudo apt install python3-osc-placement
 ```
 
 > ✅ Use this if you prefer system packages managed by APT.
@@ -1283,7 +1283,7 @@ $ sudo apt install python3-osc-placement
 Check if the plugin is loaded:
 
 ```bash
-$ openstack help | grep -i placement
+openstack help | grep -i placement
 ```
 
 You should see new commands like:
@@ -1300,7 +1300,7 @@ Resource classes represent types of resources tracked by Placement (e.g., disk, 
 Run this command to list them:
 
 ```bash
-$ openstack --os-placement-api-version 1.2 resource class list --sort-column name
+openstack --os-placement-api-version 1.2 resource class list --sort-column name
 ```
 
 > 🔁 The `--os-placement-api-version` flag ensures compatibility. Version `1.2` supports resource class listing.
@@ -1333,7 +1333,7 @@ Traits are metadata tags used to describe capabilities or properties of resource
 List all available traits:
 
 ```bash
-$ openstack --os-placement-api-version 1.6 trait list --sort-column name
+openstack --os-placement-api-version 1.6 trait list --sort-column name
 ```
 
 > 🔁 Version `1.6` introduces trait support in the API.
@@ -1372,8 +1372,8 @@ $ openstack --os-placement-api-version 1.6 trait list --sort-column name
 ### Check Logs for Errors
 
 ```bash
-$ sudo tail -f /var/log/placement/placement-api.log
-$ sudo tail -f /var/log/apache2/error.log
+sudo tail -f /var/log/placement/placement-api.log
+sudo tail -f /var/log/apache2/error.log
 ```
 
 Look for:
@@ -1403,7 +1403,7 @@ Now that the Placement service is verified:
 - Ensure Nova is configured to use the Placement API
 - Later, verify integration using:  
   ```bash
-  $ openstack hypervisor stats show
+  openstack hypervisor stats show
   ```
 
 🔗 **Official Docs**:  
