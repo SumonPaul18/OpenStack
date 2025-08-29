@@ -438,13 +438,372 @@ openstack token issue
 ```
 ---
 
-Glance Installation
+# OpenStack Glance Installation Guide (Ubuntu)  
+*Step-by-step instructions to install and configure the OpenStack Image Service (Glance) on Ubuntu*
 
-References:
-- https://docs.openstack.org/glance/2025.1/install/
-- [Install and configure (Ubuntu)](https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html)
+This guide walks you through installing and configuring the **Glance** service on the **controller node** in an OpenStack environment. Images are stored using the **local file system** for simplicity.
 
+> ✅ **Supported Version**: OpenStack 2025.1 (Ubuntu)
 
+---
+
+## 🔧 Prerequisites
+
+Before installing Glance, you must set up the database, create service credentials, and register API endpoints.
+
+### 1. Create the Glance Database
+
+Log in to your MariaDB/MySQL server as `root`:
+
+```bash
+mysql
+```
+
+Run the following SQL commands:
+
+```sql
+CREATE DATABASE glance;
+```
+
+Grant privileges to the `glance` database user (replace `GLANCE_DBPASS` with a secure password):
+
+```sql
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'GLANCE_DBPASS';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'GLANCE_DBPASS';
+```
+
+> 🔐 Example: Use `GLANCE_DBPASS=secretpassword123`
+
+Exit the database client:
+
+```sql
+EXIT;
+```
+
+---
+
+### 2. Source Admin Credentials
+
+Load the admin credentials to gain access to administrative OpenStack commands:
+
+```bash
+. admin-openrc
+```
+
+> 💡 Ensure the `admin-openrc` file exists and contains correct OS credentials.
+
+---
+
+### 3. Create Glance User and Service
+
+#### Create the `glance` user:
+```bash
+openstack user create --domain default --password-prompt glance
+```
+
+> Enter and confirm a strong password when prompted (e.g., `GLANCE_PASS`).
+
+#### Add `admin` role to the `glance` user in the `service` project:
+```bash
+openstack role add --project service --user glance admin
+```
+
+> ⚠️ This command produces **no output** — success is silent.
+
+#### Create the `glance` service entity:
+```bash
+openstack service create --name glance \
+  --description "OpenStack Image" image
+```
+
+Expected Output:
+```
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+```
+
+---
+
+### 4. Create API Endpoints
+
+Register public, internal, and admin endpoints for the Glance service:
+
+```bash
+openstack endpoint create --region RegionOne \
+  image public http://controller:9292
+```
+
+```bash
+openstack endpoint create --region RegionOne \
+  image internal http://controller:9292
+```
+
+```bash
+openstack endpoint create --region RegionOne \
+  image admin http://controller:9292
+```
+
+> ✅ All URLs point to `http://controller:9292` assuming your controller hostname is `controller`.
+
+---
+
+### 5. (Optional) Register Quota Limits in Keystone
+
+If you want to enable **per-tenant image quotas**, register these limits:
+
+```bash
+openstack --os-cloud devstack-system-admin registered limit create \
+  --service glance --default-limit 1000 --region RegionOne image_size_total
+```
+
+```bash
+openstack --os-cloud devstack-system-admin registered limit create \
+  --service glance --default-limit 1000 --region RegionOne image_stage_total
+```
+
+```bash
+openstack --os-cloud devstack-system-admin registered limit create \
+  --service glance --default-limit 100 --region RegionOne image_count_total
+```
+
+```bash
+openstack --os-cloud devstack-system-admin registered limit create \
+  --service glance --default-limit 100 --region RegionOne image_count_uploading
+```
+
+> ⚠️ You’ll need to enable `use_keystone_limits=True` later in the config.
+
+---
+
+## 📦 Install and Configure Glance Components
+
+### 1. Install Glance Packages
+
+On the controller node:
+
+```bash
+sudo apt update
+sudo apt install glance -y
+```
+
+---
+
+### 2. Configure `glance-api.conf`
+
+Edit the main configuration file:
+
+```bash
+sudo nano /etc/glance/glance-api.conf
+```
+
+### 🔹 [database] – Configure Database Access
+
+In the `[database]` section:
+
+```ini
+[database]
+connection = mysql+pymysql://glance:GLANCE_DBPASS@controller/glance
+```
+
+> 🔁 Replace `GLANCE_DBPASS` with the actual password used earlier.
+
+---
+
+### 🔹 [keystone_authtoken] – Configure Identity Authentication
+
+> ❗ Clear any existing options in this section before adding these.
+
+```ini
+[keystone_authtoken]
+www_authenticate_uri = http://controller:5000
+auth_url = http://controller:5000
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = glance
+password = GLANCE_PASS
+```
+
+> 🔁 Replace `GLANCE_PASS` with the password you set for the `glance` user.
+
+---
+
+### 🔹 [paste_deploy] – Set Paste Flavor
+
+```ini
+[paste_deploy]
+flavor = keystone
+```
+
+---
+
+### 🔹 [glance_store] – Configure Image Storage (Local File System)
+
+Add or update the following sections:
+
+```ini
+[DEFAULT]
+enabled_backends = fs:file
+```
+
+```ini
+[glance_store]
+default_backend = fs
+```
+
+```ini
+[fs]
+filesystem_store_datadir = /var/lib/glance/images/
+```
+
+> 📁 This sets the local directory where images will be stored.
+
+---
+
+### 🔹 [oslo_limit] – Enable Unified Limits (Optional)
+
+Only if using per-tenant quotas:
+
+```ini
+[oslo_limit]
+auth_url = http://controller:5000
+auth_type = password
+user_domain_id = default
+username = glance
+system_scope = all
+password = GLANCE_PASS
+endpoint_id = ENDPOINT_ID
+region_name = RegionOne
+```
+
+> 🔁 Replace:
+- `GLANCE_PASS`: Password for the `glance` user.
+- `ENDPOINT_ID`: Use the **public image endpoint ID** created earlier.
+
+To find the endpoint ID:
+
+```bash
+openstack endpoint list --service glance --region RegionOne
+```
+
+Look for the **public** endpoint and copy its ID (e.g., `340be3625e9b4239a6415d034e98aace`).
+
+---
+
+### 🔹 [DEFAULT] – Enable Quotas (Optional)
+
+To enable quota enforcement:
+
+```ini
+[DEFAULT]
+use_keystone_limits = True
+```
+
+> ⚠️ Only enable this if you registered the limits earlier.
+
+---
+
+### 6. Grant Reader Role for System Scope
+
+Ensure the `glance` user can read system-scope resources like limits:
+
+```bash
+openstack role add --user glance --user-domain Default --system all reader
+```
+
+---
+
+## 🗃️ Populate the Glance Database
+
+Run the database synchronization:
+
+```bash
+sudo su -s /bin/sh -c "glance-manage db_sync" glance
+```
+
+> ⚠️ You may see deprecation warnings — these can be safely ignored.
+
+---
+
+## 🔄 Finalize Installation
+
+Restart the Glance API service to apply all changes:
+
+```bash
+sudo service glance-api restart
+```
+
+> ✅ Glance is now ready to serve image requests.
+
+---
+
+## ✅ Verification Steps
+
+After installation, verify Glance is working:
+
+### 1. Source Admin Credentials Again
+
+```bash
+. admin-openrc
+```
+
+### 2. List Available Images (should be empty at first)
+
+```bash
+openstack image list
+```
+
+Expected Output:
+```
++----+------+--------+------------------+--------+-------+
+| ID | Name | Status | Server Type      | Schema | Size  |
++----+------+--------+------------------+--------+-------+
++----+------+--------+------------------+--------+-------+
+```
+
+If no errors occur, Glance is running correctly.
+
+---
+
+## 🛠 Troubleshooting Tips
+
+| Issue | Solution |
+|------|----------|
+| `Connection refused` to database | Ensure MySQL is running and `glance` user has correct privileges |
+| Authentication failures | Double-check `keystone_authtoken` settings and passwords |
+| Service not starting | Check logs: `tail -f /var/log/glance/api.log` |
+| Endpoint not found | Confirm endpoint creation with `openstack endpoint list --service image` |
+
+---
+
+## 📚 Next Steps
+
+- Upload your first image:
+  ```bash
+  openstack image create "cirros" \
+    --file cirros-0.5.2-x86_64-disk.img \
+    --disk-format qcow2 --container-format bare --public
+  ```
+- Proceed to install **Nova (Compute Service)** or **Cinder (Block Storage)**.
+
+---
+
+## 📎 References
+
+- Official Docs: [https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html](https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html)
+- `oslo.limit` Configuration: [OpenStack oslo.limit Docs](https://docs.openstack.org/oslo.limit/latest/)
+
+---
+
+✅ **Congratulations!** You've successfully installed and configured the OpenStack Glance service on Ubuntu.
+---
 
 - Not yet Finish, Now Have a lot installation and configurations
 
