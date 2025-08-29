@@ -123,6 +123,8 @@ character-set-server = utf8
 ```
 service mysql restart
 ```
+#### choose a suitable password ```ubuntu``` for the database root account
+
 ```
 mysql_secure_installation
 ```
