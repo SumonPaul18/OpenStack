@@ -308,7 +308,7 @@ Edit the /etc/apache2/apache2.conf
 ```
 vi /etc/apache2/apache2.conf
 ```
-Add your ServerName under Global configuration section.
+Add your ServerName under '''Global configuration''' section.
 ```
 ServerName controller
 ```
