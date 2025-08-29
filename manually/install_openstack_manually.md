@@ -942,7 +942,477 @@ Now that Glance is verified:
 
 ---
 
+# OpenStack Placement Service Installation Guide for Ubuntu
 
+This guide provides **step-by-step instructions** to install and configure the **OpenStack Placement service** on **Ubuntu**. The Placement service tracks inventory and usage of resources (like compute, memory, and disk) in an OpenStack cloud.
+
+> ✅ **Note**: This guide is based on the official OpenStack documentation for the 2025.1 release and tailored for Ubuntu systems.
+
+---
+
+## 🔧 Prerequisites
+
+Before installing the Placement service, you must set up a database, create service credentials, and register API endpoints.
+
+### Step 1: Create the Placement Database
+
+1. Connect to the MariaDB/MySQL database as the `root` user:
+
+   ```bash
+   $ sudo mysql
+   ```
+
+2. Create the `placement` database:
+
+   ```sql
+   CREATE DATABASE placement;
+   ```
+
+3. Grant privileges to the `placement` database user:
+   
+   Replace `ubuntu` with a strong password.
+
+   ```sql
+   GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'localhost' IDENTIFIED BY 'ubuntu';
+   GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'%' IDENTIFIED BY 'ubuntu';
+   ```
+
+4. Exit the database client:
+
+   ```sql
+   EXIT;
+   ```
+
+---
+
+### Step 2: Create Service User and Endpoints
+
+1. Source the `admin` credentials to get administrative access:
+
+   ```bash
+   $ . admin-openrc
+   ```
+
+   > Ensure the `admin-openrc` file exists and contains the correct admin credentials.
+
+2. Create the `placement` user in OpenStack Identity (Keystone):
+
+   ```bash
+   $ openstack user create --domain default --password-prompt placement
+   ```
+
+   - When prompted, enter a password (e.g., `PLACEMENT_PASS`) and confirm it.
+
+3. Add the `placement` user to the `service` project with the `admin` role:
+
+   ```bash
+   $ openstack role add --project service --user placement admin
+   ```
+
+   > This command produces no output on success.
+
+4. Create the Placement service entry in the service catalog:
+
+   ```bash
+   $ openstack service create --name placement --description "Placement API" placement
+   ```
+
+   Example Output:
+   ```
+   +-------------+----------------------------------+
+   | Field       | Value                            |
+   +-------------+----------------------------------+
+   | description | Placement API                    |
+   | name        | placement                        |
+   | type        | placement                        |
+   +-------------+----------------------------------+
+   ```
+
+5. Create the Placement API endpoints (public, internal, admin):
+
+   > Replace `controller` with your controller node’s hostname if different.
+
+   ```bash
+   $ openstack endpoint create --region RegionOne placement public http://controller:8778
+   $ openstack endpoint create --region RegionOne placement internal http://controller:8778
+   $ openstack endpoint create --region RegionOne placement admin http://controller:8778
+   ```
+
+   > 🔔 **Note**: The default port is `8778`. Adjust if your environment uses a different port (e.g., `8780`).
+
+---
+
+## 📦 Install and Configure Placement Components
+
+### Step 3: Install the Placement Package
+
+Install the Placement API package using APT:
+
+```bash
+$ sudo apt update
+$ sudo apt install placement-api
+```
+
+---
+
+### Step 4: Configure the Placement Service
+
+Edit the main configuration file:
+
+```bash
+$ sudo nano /etc/placement/placement.conf
+```
+
+#### 1. Configure Database Access
+
+In the `[placement_database]` section, set the database connection string:
+
+```ini
+[placement_database]
+connection = mysql+pymysql://placement:ubuntu@controller/placement
+```
+
+> 🔁 Replace `ubuntu` with the password you set earlier.
+
+#### 2. Configure API and Authentication
+
+In the `[api]` section, ensure the auth strategy is set to Keystone:
+
+```ini
+[api]
+auth_strategy = keystone
+```
+
+In the `[keystone_authtoken]` section, configure authentication settings:
+
+```ini
+[keystone_authtoken]
+auth_url = http://controller:5000/v3
+memcached_servers = controller:11211
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+project_name = service
+username = placement
+password = PLACEMENT_PASS
+```
+
+> 🔁 Replace `PLACEMENT_PASS` with the password you assigned to the `placement` user.
+
+> ⚠️ **Important**:
+> - Comment out or remove any other existing options in `[keystone_authtoken]`.
+> - Ensure domain names (`Default`) match your Keystone configuration (case-sensitive).
+
+---
+
+### Step 5: Sync the Placement Database
+
+Populate the database with initial schema and data:
+
+```bash
+$ sudo su -s /bin/sh -c "placement-manage db sync" placement
+```
+
+> 🟡 You may see deprecation warnings — these can be safely ignored.
+
+---
+
+## 🔄 Finalize Installation
+
+### Step 6: Restart the Web Server
+
+The Placement API runs under Apache. Reload the service to apply changes:
+
+```bash
+$ sudo service apache2 restart
+```
+
+---
+
+## ✅ Verification Steps
+
+To verify that the Placement service is working:
+
+1. List available services:
+
+   ```bash
+   $ openstack service list | grep placement
+   ```
+
+   Expected Output:
+   ```
+   | 2d1a27022e6e4185b86adac4444c495f | placement | placement     | Placement API |
+   ```
+
+2. List Placement API endpoints:
+
+   ```bash
+   $ openstack endpoint list | grep placement
+   ```
+
+3. Test API access (optional):
+
+   ```bash
+   $ curl -s http://controller:8778 | python3 -m json.tool
+   ```
+
+   You should see a JSON response listing available versions.
+
+---
+
+## 🛠 Troubleshooting Tips
+
+| Issue | Solution |
+|------|----------|
+| `Unable to connect to database` | Verify MySQL host, user, password, and network access |
+| `Authentication failed` | Double-check `keystone_authtoken` settings and password |
+| `404 Not Found` on API endpoint | Ensure Apache is running and placement WSGI is configured |
+| `placement-manage: command not found` | Confirm `placement-api` package is installed |
+
+Check logs for errors:
+```bash
+$ sudo tail -f /var/log/placement/placement-api.log
+$ sudo tail -f /var/log/apache2/error.log
+```
+
+---
+
+## 📚 Summary
+
+You have now successfully:
+
+✅ Created the Placement database  
+✅ Registered the Placement service and endpoints  
+✅ Installed and configured the Placement API  
+✅ Synced the database and restarted services  
+
+The Placement service is now ready to support Compute (Nova) and other resource tracking services in your OpenStack environment.
+
+---
+
+📌 **Next Steps**:
+- Proceed to install and configure the **Nova (Compute)** service.
+- Ensure Nova is configured to use the Placement API for resource tracking.
+
+🔗 **Official Docs**: [OpenStack Placement Installation Guide](https://docs.openstack.org/placement/2025.1/install/install-ubuntu.html)
+
+--- 
+# OpenStack Placement Service Verification Guide
+
+After installing and configuring the OpenStack Placement service, it's essential to **verify that it is functioning correctly**. This guide provides clear, step-by-step instructions based on the official [OpenStack Placement Verification documentation](https://docs.openstack.org/placement/2025.1/install/verify.html) for the 2025.1 release.
+
+---
+
+## ✅ Objective
+
+Verify the correct operation of the **Placement service** by:
+- Running upgrade checks
+- Installing the `osc-placement` CLI plugin
+- Listing resource classes and traits via the API
+
+---
+
+## 🔐 Step 1: Source Admin Credentials
+
+Before performing any verification steps, you must authenticate as an administrative user.
+
+```bash
+$ . admin-openrc
+```
+
+> 💡 Ensure the `admin-openrc` file exists and contains the correct environment variables (e.g., OS_USERNAME, OS_PASSWORD, etc.). If not available, use an equivalent method to source admin credentials.
+
+---
+
+## 🧪 Step 2: Run Placement Upgrade Check
+
+This command verifies the database schema and checks for potential upgrade issues.
+
+```bash
+$ placement-status upgrade check
+```
+
+### ✅ Expected Output (Example):
+
+```
++----------------------------------+
+| Upgrade Check Results            |
++----------------------------------+
+| Check: Missing Root Provider IDs |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+| Check: Incomplete Consumers      |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+```
+
+### 🟡 Troubleshooting Tips:
+- If you see errors like **"Unable to connect to database"**, verify:
+  - Database host, username, password in `/etc/placement/placement.conf`
+  - Network connectivity to the database server
+- If authentication fails, double-check `[keystone_authtoken]` settings.
+
+> 📝 **Note**: You may see deprecation warnings — these are safe to ignore during verification.
+
+---
+
+## 🔌 Step 3: Install `osc-placement` CLI Plugin
+
+The `osc-placement` plugin enables OpenStack CLI commands to interact with the Placement API.
+
+### Option A: Install via pip (Python Package Index)
+
+```bash
+$ pip3 install osc-placement
+```
+
+> ✅ Recommended if you're using a virtual environment or don't have distribution packages.
+
+### Option B: Install via Ubuntu/Debian Package
+
+```bash
+$ sudo apt install python3-osc-placement
+```
+
+> ✅ Use this if you prefer system packages managed by APT.
+
+### Verify Installation
+
+Check if the plugin is loaded:
+
+```bash
+$ openstack help | grep -i placement
+```
+
+You should see new commands like:
+- `resource class list`
+- `trait list`
+- `allocation list`, etc.
+
+---
+
+## 🔍 Step 4: Test Placement API – List Resource Classes
+
+Resource classes represent types of resources tracked by Placement (e.g., disk, memory, CPU).
+
+Run this command to list them:
+
+```bash
+$ openstack --os-placement-api-version 1.2 resource class list --sort-column name
+```
+
+> 🔁 The `--os-placement-api-version` flag ensures compatibility. Version `1.2` supports resource class listing.
+
+### ✅ Sample Output:
+
+```
++----------------------------+
+| name                       |
++----------------------------+
+| DISK_GB                    |
+| IPV4_ADDRESS               |
+| MEMORY_MB                  |
+| VCPU                       |
+| CUSTOM_FPGA_XILINX_VU9P    |
+| ...                        |
++----------------------------+
+```
+
+> 🟡 If you get a 404 or connection error, ensure:
+> - Apache is running: `sudo systemctl status apache2`
+> - Endpoint URLs are correct: `openstack endpoint list --service placement`
+
+---
+
+## 🏷️ Step 5: Test Placement API – List Traits
+
+Traits are metadata tags used to describe capabilities or properties of resource providers (e.g., `COMPUTE_HYPRTENSION_ENABLED`).
+
+List all available traits:
+
+```bash
+$ openstack --os-placement-api-version 1.6 trait list --sort-column name
+```
+
+> 🔁 Version `1.6` introduces trait support in the API.
+
+### ✅ Sample Output:
+
+```
++---------------------------------------+
+| name                                  |
++---------------------------------------+
+| COMPUTE_DEVICE_TAGGING                |
+| COMPUTE_NET_ATTACH_INTERFACE          |
+| COMPUTE_VOLUME_MULTI_ATTACH           |
+| HW_CPU_X86_SSE                        |
+| CUSTOM_TRAIT_EXAMPLE                  |
+| ...                                   |
++---------------------------------------+
+```
+
+> 🟢 Success means:
+> - The Placement API is reachable
+> - Authentication works
+> - Database is synced and populated
+
+---
+
+## 🛠 Troubleshooting Common Issues
+
+| Problem | Solution |
+|-------|----------|
+| `Command 'openstack' not found` | Install OpenStack client: `sudo apt install python3-openstackclient` |
+| `HTTP 401 Unauthorized` | Check `keystone_authtoken` credentials in `/etc/placement/placement.conf` |
+| `HTTP 404 Not Found` | Confirm endpoint URL (`http://controller:8778`) and Apache configuration |
+| `placement-status: command not found` | Ensure `placement-common` package is installed |
+
+### Check Logs for Errors
+
+```bash
+$ sudo tail -f /var/log/placement/placement-api.log
+$ sudo tail -f /var/log/apache2/error.log
+```
+
+Look for:
+- Database connection errors
+- Keystone authentication failures
+- WSGI application loading issues
+
+---
+
+## ✅ Summary: Verification Checklist
+
+| Task | Status |
+|------|--------|
+| ☑️ Source admin credentials | ✅ |
+| ☑️ Run `placement-status upgrade check` | ✅ |
+| ☑️ Install `osc-placement` plugin | ✅ |
+| ☑️ List resource classes | ✅ |
+| ☑️ List traits | ✅ |
+| ☑️ Confirm API accessibility | ✅ |
+
+---
+
+## 📚 Next Steps
+
+Now that the Placement service is verified:
+- Proceed to install and configure **Nova (Compute) Controller Services**
+- Ensure Nova is configured to use the Placement API
+- Later, verify integration using:  
+  ```bash
+  $ openstack hypervisor stats show
+  ```
+
+🔗 **Official Docs**:  
+[Verify Placement Installation](https://docs.openstack.org/placement/2025.1/install/verify.html)
+
+---
+
+
+---
 - Not yet Finish, Now Have a lot installation and configurations
 
 To be Continue from bellow link:
