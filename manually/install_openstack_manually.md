@@ -1457,17 +1457,17 @@ CREATE DATABASE nova_api;
 CREATE DATABASE nova;
 CREATE DATABASE nova_cell0;
 
-GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY 'ubuntu';
+GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'ubuntu';
 
-GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'ubuntu';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'ubuntu';
 
-GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'NOVA_DBPASS';
-GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'NOVA_DBPASS';
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY 'ubuntu';
+GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'ubuntu';
 ```
 
-🔁 Replace `NOVA_DBPASS` with a strong password (e.g., `nova_db_secret`).
+🔁 Replace `ubuntu` with a strong password (e.g., `nova_db_secret`).
 
 ### 3. Exit the database:
 
@@ -1485,7 +1485,7 @@ EXIT;
 openstack user create --domain default --password-prompt nova
 ```
 
-When prompted, enter a password (e.g., `NOVA_PASS`) and confirm it.
+When prompted, enter a password (e.g., `ubuntu`) and confirm it.
 
 ✅ Example Output:
 ```
@@ -1566,13 +1566,13 @@ Add or modify the following sections:
 
 ```ini
 [api_database]
-connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova_api
+connection = mysql+pymysql://nova:ubuntu@controller/nova_api
 
 [database]
-connection = mysql+pymysql://nova:NOVA_DBPASS@controller/nova
+connection = mysql+pymysql://nova:ubuntu@controller/nova
 ```
 
-🔁 Replace `NOVA_DBPASS` with the database password you set earlier.
+🔁 Replace `ubuntu` with the database password you set earlier.
 
 ---
 
@@ -1602,10 +1602,10 @@ project_domain_name = Default
 user_domain_name = Default
 project_name = service
 username = nova
-password = NOVA_PASS
+password = ubuntu
 ```
 
-🔁 Replace `NOVA_PASS` with the password you chose for the `nova` user.
+🔁 Replace `ubuntu` with the password you chose for the `nova` user.
 
 > ❗ **Important**: Comment out or remove any other lines in `[keystone_authtoken]`.
 
@@ -1623,10 +1623,10 @@ project_domain_name = Default
 user_domain_name = Default
 project_name = service
 username = nova
-password = NOVA_PASS
+password = ubuntu
 ```
 
-🔁 Use same `NOVA_PASS` as above.
+🔁 Use same `ubuntu` as above.
 
 ---
 
@@ -1959,10 +1959,10 @@ project_domain_name = Default
 user_domain_name = Default
 project_name = service
 username = nova
-password = NOVA_PASS
+password = ubuntu
 ```
 
-🔁 Replace `NOVA_PASS` with the password you chose for the `nova` user in Keystone.
+🔁 Replace `ubuntu` with the password you chose for the `nova` user in Keystone.
 
 > ❗ Remove or comment out any other lines in `[keystone_authtoken]`.
 
@@ -1980,10 +1980,10 @@ project_domain_name = Default
 project_name = service
 user_domain_name = Default
 username = nova
-password = NOVA_PASS
+password = ubuntu
 ```
 
-🔁 Use the same `NOVA_PASS` as above.
+🔁 Use the same `ubuntu` as above.
 
 ---
 
