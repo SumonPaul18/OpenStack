@@ -316,6 +316,46 @@ ServerName controller
 service apache2 restart
 ```
 Configure the administrative account by setting the proper environmental variables:
+```
+export OS_USERNAME=admin
+export OS_PASSWORD=ubuntu
+export OS_PROJECT_NAME=admin
+export OS_USER_DOMAIN_NAME=Default
+export OS_PROJECT_DOMAIN_NAME=Default
+export OS_AUTH_URL=http://controller:5000/v3
+export OS_IDENTITY_API_VERSION=3
+```
+Create a domain, projects, users, and roles
+The Identity service provides authentication services for each OpenStack service. The authentication service uses a combination of domains, projects, users, and roles.
+
+create a new domain would be:
+
+```
+openstack domain create --description "An Example Domain" example
+```
+Create the service project:
+```
+openstack project create --domain default \
+  --description "Service Project" service
+```  
+Create the myproject project:
+```
+openstack project create --domain default \
+  --description "Demo Project" myproject
+```
+Create the myuser user:
+```
+openstack user create --domain default \
+  --password-prompt myuser
+```
+Create the myrole role:
+```
+openstack role create myrole
+```
+Add the myrole role to the myproject project and myuser user:
+```
+openstack role add --project myproject --user myuser myrole
+```
 
 - Not yet Finish, Now Have a lot installation and configurations
 
