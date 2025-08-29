@@ -1050,7 +1050,7 @@ Install the Placement API package using APT:
 
 ```bash
 sudo apt update
-sudo apt install placement-api
+sudo apt install placement-api -y
 ```
 
 ---
@@ -1060,7 +1060,7 @@ sudo apt install placement-api
 Edit the main configuration file:
 
 ```bash
-sudo nano /etc/placement/placement.conf
+sudo vi /etc/placement/placement.conf
 ```
 
 #### 1. Configure Database Access
