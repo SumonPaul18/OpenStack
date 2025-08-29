@@ -282,7 +282,12 @@ show databases;
 ```
 use keystone;
 ``` 
-
+```
+show tables;
+```
+```
+exit;
+```
 Initialize Fernet key repositories.
 ```
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
@@ -290,7 +295,7 @@ keystone-manage credential_setup --keystone-user keystone --keystone-group keyst
 ```
 Bootstrap the Identity service.
 ```
-keystone-manage bootstrap --bootstrap-password openstack \
+keystone-manage bootstrap --bootstrap-password ubuntu \
   --bootstrap-admin-url http://controller:5000/v3/ \
   --bootstrap-internal-url http://controller:5000/v3/ \
   --bootstrap-public-url http://controller:5000/v3/ \
