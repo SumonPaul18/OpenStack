@@ -203,9 +203,6 @@ service rabbitmq-server status
 ```
 rabbitmqctl add_user openstack ubuntu
 ```
-```
-rabbitmqctl add_user openstack openstack
-```
 Permit configuration, write, and read access for the openstack user
 ```
 rabbitmqctl set_permissions openstack ".*" ".*" ".*"
