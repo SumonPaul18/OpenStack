@@ -436,6 +436,13 @@ Request an authentication token:
 ```
 openstack token issue
 ```
+---
+
+Glance Installation
+
+References:
+- https://docs.openstack.org/glance/2025.1/install/
+- [Install and configure (Ubuntu)](https://docs.openstack.org/glance/2025.1/install/install-ubuntu.html)
 
 
 
