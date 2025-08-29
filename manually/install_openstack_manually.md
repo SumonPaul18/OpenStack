@@ -393,7 +393,7 @@ Create and edit the admin-openrc file and add the following content:
 
 The OpenStack client also supports using a clouds.yaml file. For more information, see the os-client-config.
 ```
-nano admin-openrc
+vi admin-openrc
 ```
 ```
 export OS_PROJECT_DOMAIN_NAME=Default
@@ -409,7 +409,7 @@ Replace ADMIN_PASS with the password you chose for the admin user in the Identit
 
 Create and edit the demo-openrc file and add the following content:
 ```
-nano demo-openrc
+vi demo-openrc
 ```
 ```
 export OS_PROJECT_DOMAIN_NAME=Default
@@ -557,34 +557,6 @@ openstack endpoint list
 
 ---
 
-### 5. (Optional) Register Quota Limits in Keystone
-
-If you want to enable **per-tenant image quotas**, register these limits:
-
-```bash
-openstack --os-cloud devstack-system-admin registered limit create \
-  --service glance --default-limit 1000 --region RegionOne image_size_total
-```
-
-```bash
-openstack --os-cloud devstack-system-admin registered limit create \
-  --service glance --default-limit 1000 --region RegionOne image_stage_total
-```
-
-```bash
-openstack --os-cloud devstack-system-admin registered limit create \
-  --service glance --default-limit 100 --region RegionOne image_count_total
-```
-
-```bash
-openstack --os-cloud devstack-system-admin registered limit create \
-  --service glance --default-limit 100 --region RegionOne image_count_uploading
-```
-
-> ⚠️ You’ll need to enable `use_keystone_limits=True` later in the config.
-
----
-
 ## 📦 Install and Configure Glance Components
 
 ### 1. Install Glance Packages
@@ -603,7 +575,7 @@ sudo apt install glance -y
 Edit the main configuration file:
 
 ```bash
-sudo nano /etc/glance/glance-api.conf
+sudo vi /etc/glance/glance-api.conf
 ```
 
 ### 🔹 [database] – Configure Database Access
