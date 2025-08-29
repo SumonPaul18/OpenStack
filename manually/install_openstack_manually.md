@@ -3,16 +3,15 @@
 ---
 Reference: 
 1) https://www.youtube.com/playlist?list=PLVV1alynPj3E4s4Nt2VM2J5Q0gl69WDR7
+---
+#### Requirement:
 
-+++++++++++++
-#Requirement:
-++++++++++++++
-#Two VMs 
-1. Controller
-2. Compute
+We are using  
+- 1. Controller
+- 2. Compute
 
-#Operating System
-Ubuntu Latest 
+Operating System
+Ubuntu Latest Version
 
 #Change Hostname
 
