@@ -134,7 +134,7 @@ apt install rabbitmq-server -y
 ```
 service rabbitmq-server restart
 ```
-#rabbitmqctl add_user openstack RABBIT_PASS
+#rabbitmqctl add_user openstack ubuntu
 ```
 rabbitmqctl add_user openstack openstack
 ```
