@@ -644,47 +644,11 @@ filesystem_store_datadir = /var/lib/glance/images/
 
 ---
 
-### 🔹 [oslo_limit] – Enable Unified Limits (Optional)
-
-Only if using per-tenant quotas:
-
-```ini
-[oslo_limit]
-auth_url = http://controller:5000
-auth_type = password
-user_domain_id = default
-username = glance
-system_scope = all
-password = ubuntu
-endpoint_id = ENDPOINT_ID
-region_name = RegionOne
-```
-
-> 🔁 Replace:
-- `ubuntu`: Password for the `glance` user.
-- `ENDPOINT_ID`: Use the **public image endpoint ID** created earlier.
-
 To find the endpoint ID:
 
 ```bash
 openstack endpoint list --service glance --region RegionOne
 ```
-
-Look for the **public** endpoint and copy its ID (e.g., `340be3625e9b4239a6415d034e98aace`).
-
----
-
-### 🔹 [DEFAULT] – Enable Quotas (Optional)
-
-To enable quota enforcement:
-
-```ini
-[DEFAULT]
-use_keystone_limits = True
-```
-
-> ⚠️ Only enable this if you registered the limits earlier.
-
 ---
 
 ### 6. Grant Reader Role for System Scope
@@ -953,7 +917,7 @@ ls -la /var/lib/glance/images/
 Check logs for details:
 
 ```bash
-sudo tail -f /var/log/glance/api.log
+sudo tail -20 /var/log/glance/glance-api.log
 ```
 
 ---
