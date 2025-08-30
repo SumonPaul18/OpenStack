@@ -1,0 +1,29 @@
+## 🔗 Step 4: Configure Nova to Use Neutron
+
+Neutron integrates with Nova to manage network interfaces for VMs.
+
+Edit Nova's config file:
+
+```bash
+sudo vi /etc/nova/nova.conf
+```
+
+### In the `[neutron]` section:
+
+```ini
+[neutron]
+auth_url = http://controller:5000
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = ubuntu
+```
+
+🔁 Replace `ubuntu` with the password you set for the `neutron` user in Keystone.
+
+> ❗ If the `[neutron]` section doesn’t exist, create it.
+
+---

@@ -2590,7 +2590,32 @@ Add Under `[ovs]` Section:
 local_ip = 10.0.0.31
 bridge_mappings = provider:br-provider
 ```
+🔁 Replace values:
+- `br-provider`: Name of the OVS bridge connected to the physical provider network (e.g., external network).
+- `10.0.0.31`: Management IP address of the **compute node** (used for VXLAN tunneling).
 
+> 📌 Tip: Use the same IP as `my_ip` in `/etc/nova/nova.conf`.
+
+Set Up Provider Network Bridge
+
+You need an OVS bridge (`br-provider`) that connects to a physical interface (e.g., `ens3`) for provider network traffic.
+
+1. Create the Provider Bridge
+
+```bash
+sudo ovs-vsctl add-br br-provider
+```
+
+2. Add Physical Interface to Bridge
+
+```bash
+sudo ovs-vsctl add-port br-provider ens3
+```
+
+🔁 Replace `ens3` with your actual physical network interface (e.g., `eth1`, `enp2s0`, etc.).
+
+> ⚠️ **Warning**: Running this command may disconnect your SSH session if `ens3` is your management interface.  
+> ✅ Best practice: Use a dedicated interface for provider networks.
 
 Add Under `[agent]` Section:
 ```
@@ -2604,37 +2629,32 @@ l2_population = true
 > - `tunnel_types = vxlan`: Enables VXLAN overlay networks
 > - `l2_population`: Reduces flooding with ARP responder (recommended)
 
----
+Add Under `[securitygroup]` Section: 
+```ini
+enable_security_group = true
+firewall_driver = openvswitch
+# firewall_driver = iptables_hybrid   # Alternative option
+```
 
-## 🔗 Step 4: Configure Nova to Use Neutron
+> 🔹 Use `openvswitch` driver for better performance with OVS.
+> 🔹 If using `iptables_hybrid`, ensure kernel bridge filtering is enabled.
 
-Neutron integrates with Nova to manage network interfaces for VMs.
-
-Edit Nova's config file:
+#### Enable Bridge Filtering (Only if using `iptables_hybrid`):
 
 ```bash
-sudo vi /etc/nova/nova.conf
+sudo modprobe br_netfilter
+echo 'br_netfilter' | sudo tee -a /etc/modules-load.d/modules.conf
 ```
 
-### In the `[neutron]` section:
+Set sysctl values:
 
-```ini
-[neutron]
-auth_url = http://controller:5000
-auth_type = password
-project_domain_name = Default
-user_domain_name = Default
-region_name = RegionOne
-project_name = service
-username = neutron
-password = ubuntu
+```bash
+echo 'net.bridge.bridge-nf-call-iptables=1' | sudo tee -a /etc/sysctl.conf
+echo 'net.bridge.bridge-nf-call-ip6tables=1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
 ```
-
-🔁 Replace `ubuntu` with the password you set for the `neutron` user in Keystone.
-
-> ❗ If the `[neutron]` section doesn’t exist, create it.
-
 ---
+
 ## ⚙️ Step 8: Configure Layer-3 (L3) Agent
 
 ```bash
@@ -2642,7 +2662,7 @@ sudo vi /etc/neutron/l3_agent.ini
 ```
 
 ```ini
-[DEFAULT
+[DEFAULT]
 interface_driver = openvswitch
 external_network_bridge =
 ```
@@ -2809,10 +2829,10 @@ Now go to your **compute node(s)** and install Neutron components:
 
 ```bash
 sudo apt install openvswitch-switch \
-  neutron-openvswitch-agent
+  neutron-openvswitch-agent -y
 ```
 
-Then configure `/etc/neutron/neutron.conf` and `/etc/neutron/plugins/ml2/ml2_conf.ini` similarly, focusing on:
+Then configure `/etc/neutron/neutron.conf` focusing on:
 
 ```ini
 # In neutron.conf
@@ -2826,9 +2846,126 @@ transport_url = rabbit://openstack:ubuntu@controller
 lock_path = /var/lib/neutron/tmp
 ```
 
+Configure the Open vSwitch agent
+
+Edit:
+```bash
+sudo vi /etc/neutron/plugins/ml2/openvswitch_agent.ini
+```
+
+Add Under `[ovs]` Section:
 ```ini
-# In ml2_conf.ini
-[ovs]
+local_ip = 10.0.0.31
+bridge_mappings = provider:br-provider
+```
+🔁 Replace values:
+- `br-provider`: Name of the OVS bridge connected to the physical provider network (e.g., external network).
+- `10.0.0.31`: Management IP address of the **compute node** (used for VXLAN tunneling).
+
+> 📌 Tip: Use the same IP as `my_ip` in `/etc/nova/nova.conf`.
+
+Set Up Provider Network Bridge
+
+You need an OVS bridge (`br-provider`) that connects to a physical interface (e.g., `ens3`) for provider network traffic.
+
+1. Create the Provider Bridge
+
+```bash
+sudo ovs-vsctl add-br br-provider
+```
+
+2. Add Physical Interface to Bridge
+
+```bash
+sudo ovs-vsctl add-port br-provider ens3
+```
+
+🔁 Replace `ens3` with your actual physical network interface (e.g., `eth1`, `enp2s0`, etc.).
+
+> ⚠️ **Warning**: Running this command may disconnect your SSH session if `ens3` is your management interface.  
+> ✅ Best practice: Use a dedicated interface for provider networks.
+
+Add Under `[agent]` Section:
+```
+tunnel_types = vxlan
+l2_population = true
+```
+
+🔁 Replace `10.0.0.31` with the **management IP** of your compute node.
+
+> - `local_ip`: Used for VXLAN tunnel endpoints
+> - `tunnel_types = vxlan`: Enables VXLAN overlay networks
+> - `l2_population`: Reduces flooding with ARP responder (recommended)
+
+Add Under `[securitygroup]` Section: 
+```ini
+enable_security_group = true
+firewall_driver = openvswitch
+# firewall_driver = iptables_hybrid   # Alternative option
+```
+
+> 🔹 Use `openvswitch` driver for better performance with OVS.
+> 🔹 If using `iptables_hybrid`, ensure kernel bridge filtering is enabled.
+
+#### Enable Bridge Filtering (Only if using `iptables_hybrid`):
+
+```bash
+sudo modprobe br_netfilter
+echo 'br_netfilter' | sudo tee -a /etc/modules-load.d/modules.conf
+```
+
+Set sysctl values:
+
+```bash
+echo 'net.bridge.bridge-nf-call-iptables=1' | sudo tee -a /etc/sysctl.conf
+echo 'net.bridge.bridge-nf-call-ip6tables=1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+---
+Configure the Compute service to use the Networking service.
+
+Edit Nova config:
+
+```bash
+sudo nano /etc/nova/nova.conf
+```
+
+In the `[neutron]` section:
+
+```ini
+#[neutron]
+auth_url = http://controller:5000
+auth_type = password
+project_domain_name = Default
+user_domain_name = Default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = NEUTRON_PASS
+```
+
+🔁 Replace `NEUTRON_PASS` with the password you set for the `neutron` user in Keystone.
+
+Then restart Nova:
+
+```bash
+sudo service nova-compute restart
+```
+Restart the openvswitch-agent:
+```bash
+service neutron-openvswitch-agent restart
+```
+
+
+
+---
+Now Configure `/etc/neutron/plugins/ml2/ ml2_conf.ini` file:
+
+```
+sudo vi /etc/neutron/plugins/ml2/ ml2_conf.ini
+```
+Add Under `[ovs]` Section:
+```ini
 datapath_type = system
 ```
 
