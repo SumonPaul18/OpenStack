@@ -2305,19 +2305,7 @@ With this setup:
 
 ---
 
-## 🔐 Step 1: Source Admin Credentials
-
-Load admin credentials to run OpenStack CLI commands.
-
-```bash
-. admin-openrc
-```
-
-> 💡 Ensure your environment has the correct OS_* variables set (e.g., `OS_USERNAME=admin`, `OS_AUTH_URL=http://controller:5000/v3`).
-
----
-
-## 🗄️ Step 2: Create Neutron Database
+## 🗄️ Step 1: Create Neutron Database
 
 Connect to MariaDB/MySQL and create the `neutron` database.
 
@@ -2347,6 +2335,17 @@ GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'ubuntu';
 ```sql
 EXIT;
 ```
+---
+
+## 🔐 Step 2: Source Admin Credentials
+
+Load admin credentials to run OpenStack CLI commands.
+
+```bash
+. admin-openrc
+```
+
+> 💡 Ensure your environment has the correct OS_* variables set (e.g., `OS_USERNAME=admin`, `OS_AUTH_URL=http://controller:5000/v3`).
 
 ---
 
@@ -2414,10 +2413,10 @@ Install required Neutron components on the **controller node**:
 
 ```bash
 sudo apt update -y
-sudo apt install neutron-server   neutron-plugin-ml2 \
-  neutron-openvswitch-agent neutron-l3-agent \
-  neutron-dhcp-agent neutron-metadata-agent \
-  openvswitch-switch -y
+sudo apt install neutron-server neutron-plugin-ml2 \
+neutron-openvswitch-agent neutron-l3-agent \
+neutron-dhcp-agent neutron-metadata-agent \
+openvswitch-switch -y
 ```
 
 🛠️ Components installed:
@@ -2452,9 +2451,9 @@ connection = mysql+pymysql://neutron:ubuntu@controller/neutron
 
 ---
 
-### 2. RabbitMQ-(ML2)plugin-auth_strategy
+### 2. RabbitMQ, (ML2)plugin, auth_strategy
 
-Under `[DEFAULT]` section:
+Add under the `[DEFAULT]` section:
 ```ini
 transport_url = rabbit://openstack:ubuntu@controller
 core_plugin = ml2
@@ -2488,8 +2487,8 @@ password = ubuntu
 
 ### 4. Nova Integration
 
+Add under the `[DEFAULT]` section:
 ```ini
-[DEFAULT]
 notify_nova_on_port_status_changes = true
 notify_nova_on_port_data_changes = true
 ```
@@ -2497,7 +2496,7 @@ notify_nova_on_port_data_changes = true
 This tells Neutron to notify Nova when ports change.
 
 
-Under `[nova]` Secton:
+Add under the `[nova]` Secton:
 ```
 auth_url = http://controller:5000
 auth_type = password
@@ -2512,7 +2511,7 @@ password = ubuntu
 
 ### 5. Lock Path
 
-Under `[oslo_concurrency]` Section:
+Add under the `[oslo_concurrency]` Section:
 ```ini
 lock_path = /var/lib/neutron/tmp
 ```
