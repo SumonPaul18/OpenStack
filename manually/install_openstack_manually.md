@@ -2964,7 +2964,7 @@ lock_path = /var/lib/neutron/tmp
 Create the directory if missing:
 
 ```bash
-$ sudo mkdir -p /var/lib/neutron/tmp
+sudo mkdir -p /var/lib/neutron/tmp
 ```
 
 ---
@@ -3054,14 +3054,14 @@ sudo sysctl -p
 Restart services to apply changes:
 
 ```bash
-$ sudo service openvswitch-switch restart
-$ sudo service neutron-openvswitch-agent restart
+sudo service openvswitch-switch restart
+sudo service neutron-openvswitch-agent restart
 ```
 
 Enable auto-start:
 
 ```bash
-$ sudo systemctl enable neutron-openvswitch-agent
+sudo systemctl enable neutron-openvswitch-agent
 ```
 
 ---
@@ -3073,13 +3073,13 @@ Go back to the **controller node** and verify the agent is registered.
 ### 1. Source Admin Credentials
 
 ```bash
-$ . admin-openrc
+. admin-openrc
 ```
 
 ### 2. List Neutron Agents
 
 ```bash
-$ openstack network agent list
+openstack network agent list
 ```
 
 ✅ Look for:
@@ -3103,7 +3103,7 @@ Ensure Nova is configured to use Neutron for networking.
 Edit Nova config:
 
 ```bash
-$ sudo nano /etc/nova/nova.conf
+sudo nano /etc/nova/nova.conf
 ```
 
 In the `[neutron]` section:
@@ -3125,7 +3125,7 @@ password = NEUTRON_PASS
 Then restart Nova:
 
 ```bash
-$ sudo service nova-compute restart
+sudo service nova-compute restart
 ```
 
 > ✅ This allows Nova to create ports and request network resources from Neutron.
@@ -3158,9 +3158,9 @@ Now that your compute node is fully integrated:
 
 Example:
 ```bash
-$ openstack server create --image cirros --flavor m1.tiny --network selfservice-net --security-group default my-instance
-$ openstack floating ip create provider-net
-$ openstack server add floating ip my-instance <floating-ip>
+openstack server create --image cirros --flavor m1.tiny --network selfservice-net --security-group default my-instance
+openstack floating ip create provider-net
+openstack server add floating ip my-instance <floating-ip>
 ```
 
 ---
@@ -3177,8 +3177,8 @@ $ openstack server add floating ip my-instance <floating-ip>
 
 Check logs:
 ```bash
-$ sudo tail -f /var/log/neutron/openvswitch-agent.log
-$ sudo tail -f /var/log/nova/nova-compute.log
+sudo tail -f /var/log/neutron/openvswitch-agent.log
+sudo tail -f /var/log/nova/nova-compute.log
 ```
 
 ---
@@ -3191,11 +3191,334 @@ $ sudo tail -f /var/log/nova/nova-compute.log
 🎯 Your OpenStack cloud now supports scalable, secure, multi-tenant networking!
 
 ---
+# OpenStack Horizon (Dashboard) Installation and Verification Guide  
+**For Ubuntu – Step-by-Step Guide (2025.1 Release)**
 
-
+> ✅ Based on:  
+> - [Install Horizon on Ubuntu](https://docs.openstack.org/horizon/2025.1/install/install-ubuntu.html)  
+> - [Verify Horizon Installation](https://docs.openstack.org/horizon/2025.1/install/verify-ubuntu.html)  
+> 🖥️ Role: **Controller Node**  
+> 🔧 Service: **Horizon (OpenStack Dashboard)**  
+> 📦 Distribution: **Ubuntu**
 
 ---
-- Not yet Finish, Now Have a lot installation and configurations
 
-To be Continue from bellow link:
-https://docs.openstack.org/keystone/yoga/install/keystone-install-ubuntu.html
+## 🧩 Overview
+
+This guide provides a **clear, step-by-step process** to install and verify the **OpenStack Dashboard (Horizon)** on the **controller node** using Ubuntu.
+
+Horizon is the web-based interface for OpenStack, allowing users and administrators to manage:
+- Instances (VMs)
+- Networks
+- Volumes
+- Images
+- Users and projects
+
+🔧 You will:
+- Install the `openstack-dashboard` package
+- Configure `local_settings.py` for integration
+- Enable required features (domains, API versions)
+- Reload Apache web server
+- Verify access via browser
+
+> ⚠️ Prerequisites:
+> - Controller node must have: **Keystone (Identity), Nova (Compute), Glance (Image), Neutron (Networking)** already installed.
+> - Apache2 and Memcached services must be running.
+
+---
+
+## 📦 Step 1: Install Horizon Package
+
+Log in to your **controller node** and install the OpenStack dashboard:
+
+```bash
+sudo apt update
+sudo apt install openstack-dashboard -y
+```
+
+> ✅ This installs:
+> - Django-based web dashboard
+> - Apache configuration (`/etc/apache2/conf-enabled/openstack-dashboard.conf`)
+> - Python dependencies
+
+---
+
+## ⚙️ Step 2: Configure `local_settings.py`
+
+Edit the main Horizon configuration file:
+
+```bash
+sudo vi /etc/openstack-dashboard/local_settings.py
+```
+
+Update the following settings:
+
+### 1. Set OpenStack Host
+
+Ensure Horizon connects to services on the `controller` node:
+
+```python
+OPENSTACK_HOST = "controller"
+```
+
+---
+
+### 2. Allow Access from Your Hosts
+
+Configure which hosts can access the dashboard.
+
+Replace `['one.example.com']` with your allowed hosts or use `['*']` for testing:
+
+```python
+ALLOWED_HOSTS = ['*']
+```
+
+> 🔒 **Production Note**: Replace `['*']` with specific hostnames like `['controller', 'dashboard.example.com']`.  
+> Using `['*']` is **insecure** in production.
+
+---
+
+### 3. Configure Memcached Session Storage
+
+Set up session storage using Memcached:
+
+```python
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+        'LOCATION': 'controller:11211',
+    }
+}
+```
+
+> ✅ Ensure Memcached is running:
+> ```bash
+> sudo systemctl status memcached
+> ```
+
+> ❗ Comment out any other session engine lines.
+
+---
+
+### 4. Enable Keystone API v3
+
+Set the correct Identity API version:
+
+```python
+OPENSTACK_KEYSTONE_URL = "http://%s:5000/identity/v3" % OPENSTACK_HOST
+```
+
+> ✅ Port `5000` is required for Keystone v3.
+
+---
+
+### 5. Enable Domain Support
+
+Allow multi-domain user management:
+
+```python
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+```
+
+---
+
+### 6. Set Default Domain
+
+Use `Default` as the default domain for new users:
+
+```python
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "Default"
+```
+
+---
+
+### 7. Configure API Versions
+
+Define the correct API versions for integrated services:
+
+```python
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 3,
+}
+```
+
+---
+
+### 8. (Optional) Set Time Zone
+
+Replace `TIME_ZONE` with your local time zone:
+
+```python
+TIME_ZONE = "Asia/Dhaka"
+```
+
+> 🌍 See [List of Time Zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) for valid values.
+
+---
+
+### 9. Configure Neutron Networking (For Option 2 Only)
+
+If you chose **Neutron Option 2 (Self-Service Networks)**, enable router and floating IP support by **uncommenting and enabling** these options:
+
+```python
+OPENSTACK_NEUTRON_NETWORK = {
+    'enable_router': True,
+    'enable_quotas': True,
+    'enable_ipv6': True,
+    'enable_distributed_router': False,
+    'enable_ha_router': False,
+    'enable_fip_topology_check': True,
+}
+```
+
+> ✅ This enables:
+> - Routers
+> - Floating IPs
+> - Network quotas
+> - IPv6 support
+
+> 🚫 If you used **Neutron Option 1 (Provider Networks only)**, leave this section commented or set all to `False`.
+
+---
+
+## 🔧 Step 3: Fix Apache WSGI Configuration (If Needed)
+
+Ensure the following line exists in the Apache config:
+
+```bash
+sudo vi /etc/apache2/conf-available/openstack-dashboard.conf
+```
+
+Add this line if missing:
+
+```apache
+WSGIApplicationGroup %{GLOBAL}
+```
+
+> ✅ This fixes potential import conflicts in mod_wsgi.
+
+---
+
+## 🔁 Step 4: Reload Web Server
+
+Apply all configuration changes:
+
+```bash
+sudo systemctl reload apache2
+```
+
+> ✅ No restart is needed unless you made deep changes.
+
+---
+
+## ✅ Step 5: Verify Horizon Installation
+
+Now that Horizon is installed, verify it works.
+
+### 1. Access Dashboard via Browser
+
+Open your web browser and go to:
+
+```
+http://controller/dashboard
+```
+
+🔁 Replace `controller` with the IP or hostname of your controller node.
+
+> Example: `http://192.168.0.87/dashboard`
+
+You should see the **OpenStack login page**.
+
+---
+
+### 2. Log In with Admin Credentials
+
+Use the following credentials:
+- **Domain**: `Default`
+- **Username**: `admin`
+- **Password**: (your admin password)
+
+> 💡 If login fails:
+> - Check Keystone is running
+> - Confirm password in `admin-openrc`
+> - View logs: `/var/log/apache2/*error*.log`
+
+---
+
+### 3. Test Basic Operations
+
+Once logged in, verify you can:
+- View **Instances**, **Networks**, **Images**, **Volumes**
+- See existing services under **Admin > System Information**
+- Switch between **Admin** and **Demo** projects (if demo user exists)
+
+---
+
+### 4. Check Dashboard Logs (Troubleshooting)
+
+If the dashboard doesn't load:
+
+```bash
+sudo tail -f /var/log/apache2/error.log
+sudo tail -f /var/log/apache2/openstack-dashboard_error.log
+```
+
+Common issues:
+- `Memcached not running` → Start it: `sudo systemctl start memcached`
+- `ALLOWED_HOSTS mismatch` → Set `ALLOWED_HOSTS = ['*']` temporarily
+- `Keystone unreachable` → Check `http://controller:5000/v3` is accessible
+
+---
+
+## 📌 Summary Checklist
+
+| Task | Status |
+|------|--------|
+| ☑️ Install `openstack-dashboard` package | ✅ |
+| ☑️ Set `OPENSTACK_HOST = "controller"` | ✅ |
+| ☑️ Configure `ALLOWED_HOSTS` | ✅ |
+| ☑️ Enable `memcached` session storage | ✅ |
+| ☑️ Set `OPENSTACK_KEYSTONE_URL` with port `5000` | ✅ |
+| ☑️ Enable domain support and default domain | ✅ |
+| ☑️ Set correct API versions (`identity: 3`, etc.) | ✅ |
+| ☑️ Enable Neutron features (if using self-service) | ✅ |
+| ☑️ Add `WSGIApplicationGroup %{GLOBAL}` | ✅ |
+| ☑️ Reload Apache: `systemctl reload apache2` | ✅ |
+| ☑️ Access `http://controller/dashboard` in browser | ✅ |
+| ☑️ Log in as `admin` user | ✅ |
+
+---
+
+## 🚀 Next Steps
+
+After successful Horizon installation:
+
+1. ➡️ Create a **demo user and project** for testing
+2. ➡️ Upload a cloud image (e.g., Ubuntu 22.04) via Glance
+3. ➡️ Launch your first VM using the dashboard
+4. ➡️ Assign a floating IP and SSH into it
+
+Example commands to create demo user:
+```bash
+openstack project create --domain default --description "Demo Project" demo
+openstack user create --domain default --password-prompt demo
+openstack role add --project demo --user demo user
+```
+
+Then log in to Horizon as `demo`.
+
+---
+
+## 🔗 Official Documentation
+
+- [Install Horizon on Ubuntu](https://docs.openstack.org/horizon/2025.1/install/install-ubuntu.html)
+- [Verify Horizon Installation](https://docs.openstack.org/horizon/2025.1/install/verify-ubuntu.html)
+
+
+🎯 You now have a fully functional web UI for managing your OpenStack cloud!
+
+---
