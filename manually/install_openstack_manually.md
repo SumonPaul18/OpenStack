@@ -2820,31 +2820,158 @@ openstack network agent list
 
 ---
 
-## 🚀 Next Steps: Go to Compute Node
+## 📌 Summary Checklist
 
+| Task | Status |
+|------|--------|
+| ☑️ Source admin credentials | ✅ |
+| ☑️ Create Neutron DB and user | ✅ |
+| ☑️ Register Neutron service and endpoints | ✅ |
+| ☑️ Install Neutron packages | ✅ |
+| ☑️ Configure `neutron.conf`, `ml2_conf.ini` | ✅ |
+| ☑️ Configure L3, DHCP, Metadata agents | ✅ |
+| ☑️ Update Nova to use Neutron | ✅ |
+| ☑️ Sync database and start services | ✅ |
+| ☑️ Verify agents with `openstack network agent list` | ✅ |
+
+---
+
+## 🧪 Test Your Setup (After Compute Node Ready)
+
+Once compute and network are ready:
+1. Create a **self-service network**
+2. Launch an instance on it
+3. Create a **router** to connect to provider network
+4. Assign a **floating IP**
+5. Ping/SSH into the instance
+
+You’ve built a full cloud network!
+
+---
+
+🔗 **Official Docs**:  
+- [Neutron Controller Install](https://docs.openstack.org/neutron/2025.1/install/controller-install-ubuntu.html)  
+- [Option 2: Self-Service Networks](https://docs.openstack.org/neutron/2025.1/install/controller-install-option2-ubuntu.html)
+
+🎯 You're now ready to enable advanced networking in your OpenStack cloud!
+
+---
+# 🚀 Next Steps: Go to Compute Node
 Now go to your **compute node(s)** and install Neutron components:
+## OpenStack Neutron (Networking) Installation Guide for Ubuntu  
+**Compute Node Setup with Self-Service Networks (Option 2)**
 
-### On Compute Node:
+> ✅ Based on:  
+> - [Neutron Compute Install (Ubuntu)](https://docs.openstack.org/neutron/2025.1/install/compute-install-ubuntu.html)  
+> - [Option 2: Self-Service Networks for Compute Node](https://docs.openstack.org/neutron/2025.1/install/compute-install-option2-ubuntu.html)  
+> 🖥️ Role: **Compute Node**  
+> 🔧 Networking Option: **Self-Service (VXLAN Overlay) + Provider Networks**  
+> 📦 Distribution: **Ubuntu**
+
+---
+
+## 🧩 Overview
+
+This guide walks you through installing and configuring the **OpenStack Neutron service on a compute node**, using **Networking Option 2 – Self-Service Networks**.
+
+With this setup:
+- ✅ Instances can use **private (self-service) networks**
+- ✅ Support for **routers, floating IPs, and NAT**
+- ✅ Overlay networking via **VXLAN tunnels**
+- ✅ Integration with **Open vSwitch (OVS)**
+- ✅ Security groups are enforced
+
+🔧 You will:
+- Install `neutron-openvswitch-agent`
+- Configure `neutron.conf`, `openvswitch_agent.ini`
+- Set up OVS bridges for provider and overlay networks
+- Enable security groups
+- Restart services
+
+> ⚠️ Prerequisites:
+> - Controller node must have Neutron (with ML2, L3, DHCP, Metadata agents) already installed and running.
+> - RabbitMQ, Keystone, Nova, and Placement services must be accessible.
+> - The compute node must have network connectivity to the controller.
+
+---
+
+## 📦 Step 1: Install Neutron Open vSwitch Agent
+
+Log in to your **compute node** and install the required package:
 
 ```bash
-sudo apt install openvswitch-switch \
-  neutron-openvswitch-agent -y
+sudo apt update -y
+sudo apt install neutron-openvswitch-agent -y
 ```
 
-Then configure `/etc/neutron/neutron.conf` focusing on:
+🛠️ This installs:
+- `neutron-openvswitch-agent`: Manages virtual switches and tunnels
+- `openvswitch-switch`: Core OVS support
+
+> ❗ Do **not** install `neutron-server`, `neutron-l3-agent`, or `neutron-dhcp-agent` on compute nodes unless needed.
+
+---
+
+## ⚙️ Step 2: Configure Common Neutron Settings
+
+Edit the main Neutron configuration file:
+
+```bash
+sudo nano /etc/neutron/neutron.conf
+```
+
+Update the following sections:
+
+### 1. Disable Database Access
+
+Compute nodes do **not** access the database directly.
 
 ```ini
-# In neutron.conf
+[database]
+# connection = sqlite:///neutron.sqlite
+# Comment out or leave this line commented
+```
+
+✅ Ensure no `connection` line is active.
+
+---
+
+### 2. RabbitMQ Message Queue
+
+In the `[DEFAULT]` section:
+
+```ini
 [DEFAULT]
 transport_url = rabbit://openstack:ubuntu@controller
+```
 
-[keystone_authtoken]
-# Same as controller
+🔁 Replace `RABBIT_PASS` with the password for the `openstack` user in RabbitMQ.
 
+> ✅ Example: If RabbitMQ password is `rabbit_secret`, use:
+> ```
+> transport_url = rabbit://openstack:rabbit_secret@controller
+> ```
+
+---
+
+### 3. Concurrency Lock Path
+
+```ini
 [oslo_concurrency]
 lock_path = /var/lib/neutron/tmp
 ```
 
+Create the directory if missing:
+
+```bash
+$ sudo mkdir -p /var/lib/neutron/tmp
+```
+
+---
+
+## ⚙️ Step 3: Configure Open vSwitch Agent (`openvswitch_agent.ini`)
+
+This is the key configuration for **self-service networks** using **VXLAN**.
 Configure the Open vSwitch agent
 
 Edit:
@@ -2920,303 +3047,6 @@ echo 'net.bridge.bridge-nf-call-iptables=1' | sudo tee -a /etc/sysctl.conf
 echo 'net.bridge.bridge-nf-call-ip6tables=1' | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 ```
----
-Configure the Compute service to use the Networking service.
-
-Edit Nova config:
-
-```bash
-sudo nano /etc/nova/nova.conf
-```
-
-In the `[neutron]` section:
-
-```ini
-#[neutron]
-auth_url = http://controller:5000
-auth_type = password
-project_domain_name = Default
-user_domain_name = Default
-region_name = RegionOne
-project_name = service
-username = neutron
-password = NEUTRON_PASS
-```
-
-🔁 Replace `NEUTRON_PASS` with the password you set for the `neutron` user in Keystone.
-
-Then restart Nova:
-
-```bash
-sudo service nova-compute restart
-```
-Restart the openvswitch-agent:
-```bash
-service neutron-openvswitch-agent restart
-```
-
-
-
----
-Now Configure `/etc/neutron/plugins/ml2/ ml2_conf.ini` file:
-
-```
-sudo vi /etc/neutron/plugins/ml2/ ml2_conf.ini
-```
-Add Under `[ovs]` Section:
-```ini
-datapath_type = system
-```
-
-Then restart:
-```bash
-sudo service openvswitch-switch restart
-sudo service neutron-openvswitch-agent restart
-```
-
-After that, return to the **controller** and verify the compute OVS agent appears in:
-
-```bash
-openstack network agent list
-```
-
----
-
-## 📌 Summary Checklist
-
-| Task | Status |
-|------|--------|
-| ☑️ Source admin credentials | ✅ |
-| ☑️ Create Neutron DB and user | ✅ |
-| ☑️ Register Neutron service and endpoints | ✅ |
-| ☑️ Install Neutron packages | ✅ |
-| ☑️ Configure `neutron.conf`, `ml2_conf.ini` | ✅ |
-| ☑️ Configure L3, DHCP, Metadata agents | ✅ |
-| ☑️ Update Nova to use Neutron | ✅ |
-| ☑️ Sync database and start services | ✅ |
-| ☑️ Verify agents with `openstack network agent list` | ✅ |
-
----
-
-## 🧪 Test Your Setup (After Compute Node Ready)
-
-Once compute and network are ready:
-1. Create a **self-service network**
-2. Launch an instance on it
-3. Create a **router** to connect to provider network
-4. Assign a **floating IP**
-5. Ping/SSH into the instance
-
-You’ve built a full cloud network!
-
----
-
-🔗 **Official Docs**:  
-- [Neutron Controller Install](https://docs.openstack.org/neutron/2025.1/install/controller-install-ubuntu.html)  
-- [Option 2: Self-Service Networks](https://docs.openstack.org/neutron/2025.1/install/controller-install-option2-ubuntu.html)
-
-🎯 You're now ready to enable advanced networking in your OpenStack cloud!
-
----
-
-# OpenStack Neutron (Networking) Installation Guide for Ubuntu  
-**Compute Node Setup with Self-Service Networks (Option 2)**
-
-> ✅ Based on:  
-> - [Neutron Compute Install (Ubuntu)](https://docs.openstack.org/neutron/2025.1/install/compute-install-ubuntu.html)  
-> - [Option 2: Self-Service Networks for Compute Node](https://docs.openstack.org/neutron/2025.1/install/compute-install-option2-ubuntu.html)  
-> 🖥️ Role: **Compute Node**  
-> 🔧 Networking Option: **Self-Service (VXLAN Overlay) + Provider Networks**  
-> 📦 Distribution: **Ubuntu**
-
----
-
-## 🧩 Overview
-
-This guide walks you through installing and configuring the **OpenStack Neutron service on a compute node**, using **Networking Option 2 – Self-Service Networks**.
-
-With this setup:
-- ✅ Instances can use **private (self-service) networks**
-- ✅ Support for **routers, floating IPs, and NAT**
-- ✅ Overlay networking via **VXLAN tunnels**
-- ✅ Integration with **Open vSwitch (OVS)**
-- ✅ Security groups are enforced
-
-🔧 You will:
-- Install `neutron-openvswitch-agent`
-- Configure `neutron.conf`, `openvswitch_agent.ini`
-- Set up OVS bridges for provider and overlay networks
-- Enable security groups
-- Restart services
-
-> ⚠️ Prerequisites:
-> - Controller node must have Neutron (with ML2, L3, DHCP, Metadata agents) already installed and running.
-> - RabbitMQ, Keystone, Nova, and Placement services must be accessible.
-> - The compute node must have network connectivity to the controller.
-
----
-
-## 📦 Step 1: Install Neutron Open vSwitch Agent
-
-Log in to your **compute node** and install the required package:
-
-```bash
-$ sudo apt update
-$ sudo apt install neutron-openvswitch-agent
-```
-
-🛠️ This installs:
-- `neutron-openvswitch-agent`: Manages virtual switches and tunnels
-- `openvswitch-switch`: Core OVS support
-
-> ❗ Do **not** install `neutron-server`, `neutron-l3-agent`, or `neutron-dhcp-agent` on compute nodes unless needed.
-
----
-
-## ⚙️ Step 2: Configure Common Neutron Settings
-
-Edit the main Neutron configuration file:
-
-```bash
-$ sudo nano /etc/neutron/neutron.conf
-```
-
-Update the following sections:
-
-### 1. Disable Database Access
-
-Compute nodes do **not** access the database directly.
-
-```ini
-[database]
-# connection = sqlite:///neutron.sqlite
-# Comment out or leave this line commented
-```
-
-✅ Ensure no `connection` line is active.
-
----
-
-### 2. RabbitMQ Message Queue
-
-In the `[DEFAULT]` section:
-
-```ini
-[DEFAULT]
-transport_url = rabbit://openstack:RABBIT_PASS@controller
-```
-
-🔁 Replace `RABBIT_PASS` with the password for the `openstack` user in RabbitMQ.
-
-> ✅ Example: If RabbitMQ password is `rabbit_secret`, use:
-> ```
-> transport_url = rabbit://openstack:rabbit_secret@controller
-> ```
-
----
-
-### 3. Concurrency Lock Path
-
-```ini
-[oslo_concurrency]
-lock_path = /var/lib/neutron/tmp
-```
-
-Create the directory if missing:
-
-```bash
-$ sudo mkdir -p /var/lib/neutron/tmp
-```
-
----
-
-## ⚙️ Step 3: Configure Open vSwitch Agent (`openvswitch_agent.ini`)
-
-This is the key configuration for **self-service networks** using **VXLAN**.
-
-```bash
-$ sudo nano /etc/neutron/plugins/ml2/openvswitch_agent.ini
-```
-
-### 1. OVS Configuration
-
-```ini
-[ovs]
-bridge_mappings = provider:br-provider
-local_ip = 10.0.0.31
-```
-
-🔁 Replace values:
-- `br-provider`: Name of the OVS bridge connected to the physical provider network (e.g., external network).
-- `10.0.0.31`: Management IP address of the **compute node** (used for VXLAN tunneling).
-
-> 📌 Tip: Use the same IP as `my_ip` in `/etc/nova/nova.conf`.
-
----
-
-### 2. Agent Configuration
-
-```ini
-[agent]
-tunnel_types = vxlan
-l2_population = true
-```
-
-- `tunnel_types = vxlan`: Enables VXLAN overlay networks for tenant isolation
-- `l2_population = true`: Reduces flooding by learning MAC addresses via controller (ARP responder)
-
----
-
-### 3. Security Group Settings
-
-```ini
-[securitygroup]
-enable_security_group = true
-firewall_driver = openvswitch
-# firewall_driver = iptables_hybrid   # Alternative option
-```
-
-> 🔹 Use `openvswitch` driver for better performance with OVS.
-> 🔹 If using `iptables_hybrid`, ensure kernel bridge filtering is enabled.
-
-#### Enable Bridge Filtering (Only if using `iptables_hybrid`):
-
-```bash
-$ sudo modprobe br_netfilter
-$ echo 'br_netfilter' | sudo tee -a /etc/modules-load.d/modules.conf
-```
-
-Set sysctl values:
-
-```bash
-$ echo 'net.bridge.bridge-nf-call-iptables=1' | sudo tee -a /etc/sysctl.conf
-$ echo 'net.bridge.bridge-nf-call-ip6tables=1' | sudo tee -a /etc/sysctl.conf
-$ sudo sysctl -p
-```
-
----
-
-## 🌐 Step 4: Set Up Provider Network Bridge
-
-You need an OVS bridge (`br-provider`) that connects to a physical interface (e.g., `ens3`) for provider network traffic.
-
-### 1. Create the Provider Bridge
-
-```bash
-$ sudo ovs-vsctl add-br br-provider
-```
-
-### 2. Add Physical Interface to Bridge
-
-```bash
-$ sudo ovs-vsctl add-port br-provider ens3
-```
-
-🔁 Replace `ens3` with your actual physical network interface (e.g., `eth1`, `enp2s0`, etc.).
-
-> ⚠️ **Warning**: Running this command may disconnect your SSH session if `ens3` is your management interface.  
-> ✅ Best practice: Use a dedicated interface for provider networks.
-
 ---
 
 ## 🔁 Step 5: Restart OVS and Neutron Agent
