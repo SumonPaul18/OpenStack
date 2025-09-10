@@ -19,7 +19,8 @@ sudo hostnamectl set-hostname cloud3
 ```
 Configure Static IPs
 ```
-vi /etc/netplan/50
+nano /etc/netplan/50
+```
 ```
 network:
   version: 2
@@ -41,6 +42,7 @@ network:
       addresses:
         - 192.168.106.15/24
 
+```
 ```
 netplan apply
 ```
