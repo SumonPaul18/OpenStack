@@ -27,12 +27,12 @@ Run all commands as **root** or with `sudo`.
 ---
 
 ## Step 1: Update System & Install Dependencies
-
+Update system
 ```bash
-# Update system
 apt update && apt upgrade -y
-
-# Install required build tools and Python dependencies
+```
+Install required build tools and Python dependencies
+```
 apt install -y git python3-dev libffi-dev gcc libssl-dev libdbus-glib-1-dev python3-venv
 ```
 
@@ -45,15 +45,16 @@ apt install -y git python3-dev libffi-dev gcc libssl-dev libdbus-glib-1-dev pyth
 ---
 
 ## Step 2: Create and Activate Virtual Environment
-
+Create virtual environment
 ```bash
-# Create virtual environment
 python3 -m venv /opt/venv-kolla
-
-# Activate it
+```
+Activate it
+```
 source /opt/venv-kolla/bin/activate
-
-# Upgrade pip
+```
+Upgrade pip
+```
 pip install -U pip
 ```
 
@@ -62,36 +63,36 @@ pip install -U pip
 ---
 
 ## Step 3: Install Kolla-Ansible from Git (Development Method)
-
+Clone the stable branch
 ```bash
-# Clone the stable branch
 git clone --branch stable/2025.1 https://opendev.org/openstack/kolla-ansible
-
-# Install kolla-ansible and its dependency (kolla)
+```
+Install kolla-ansible and its dependency (kolla)
+```
 pip install ./kolla-ansible
 ```
 
 ---
 
 ## Step 4: Create Kolla Configuration Directory
-
+Create config directory
 ```bash
-# Create config directory
 sudo mkdir -p /etc/kolla
-
-# Allow current user to write
+```
+Allow current user to write
+```
 sudo chown $USER:$USER /etc/kolla
 ```
 
 ---
 
 ## Step 5: Copy Configuration Files
-
+Copy globals.yml and passwords.yml
 ```bash
-# Copy globals.yml and passwords.yml
 cp -r kolla-ansible/etc/kolla/* /etc/kolla/
-
-# Copy inventory files (all-in-one and multinode)
+```
+Copy inventory files (all-in-one and multinode)
+```
 cp kolla-ansible/ansible/inventory/* .
 ```
 
@@ -106,12 +107,10 @@ kolla-ansible install-deps
 ---
 
 ## Step 7: Generate Random Passwords
-
+Run the password generator script
 ```bash
-# Run the password generator script
 cd kolla-ansible/tools
 ./generate_passwords.py
-cd -
 ```
 
 > ✅ This fills `/etc/kolla/passwords.yml` with secure passwords.
@@ -162,12 +161,10 @@ kolla_install_type: "source"
 ## Step 9: Bootstrap Server
 
 Installs Docker and other host-level dependencies.
-
+Run bootstrap
 ```bash
-# Run bootstrap
 cd kolla-ansible/tools
 ./kolla-ansible bootstrap-servers -i ../../all-in-one
-cd -
 ```
 
 ---
@@ -175,12 +172,12 @@ cd -
 ## Step 10: Fix Ansible Runtime Missing Modules (CRITICAL!)
 
 This prevents `ModuleNotFoundError: docker`, `dbus`, etc.
-
+Install required packages in Kolla's isolated Ansible runtime
 ```bash
-# Install required packages in Kolla's isolated Ansible runtime
 /opt/ansible-runtime/bin/pip install docker dbus-python
-
+```
 # Verify installation
+```
 /opt/ansible-runtime/bin/python3.12 -c "import docker; print('Docker OK')"
 /opt/ansible-runtime/bin/python3.12 -c "import dbus; print('DBus OK')"
 ```
@@ -211,13 +208,25 @@ kolla-ansible deploy -i ./all-in-one
 
 ## Step 13: Generate Admin Credentials
 
+Create the required directory
+```
+sudo mkdir -p /etc/kolla/ansible/inventory
+```
+Copy your all-in-one inventory file to the expected path
+```
+cp ./all-in-one /etc/kolla/ansible/inventory/all-in-one
+```
+> 💡 Make sure you are running this from a directory where ./all-in-one exists (e.g., your home directory). 
+Run post-deploy
 ```bash
-# Run post-deploy
 cd kolla-ansible/tools
 ./kolla-ansible post-deploy
-cd -
 ```
-
+##  Optional: Always Use Explicit Inventory (Recommended)
+Instead of relying on default paths, always specify the inventory with -i:
+```
+kolla-ansible post-deploy -i ./all-in-one
+```
 > ✅ Creates:
 > - `/etc/kolla/admin-openrc.sh`
 > - `/etc/kolla/clouds.yaml`
@@ -225,18 +234,16 @@ cd -
 ---
 
 ## Step 14: Install OpenStack CLI
-
+Install OpenStack client
 ```bash
-# Install OpenStack client
 pip install python-openstackclient -c https://releases.openstack.org/constraints/upper/2025.1
 ```
 
 ---
 
 ## Step 15: Configure CLI Access
-
+Create config directory
 ```bash
-# Create config directory
 mkdir -p ~/.config/openstack
 
 # Copy clouds.yaml
@@ -257,9 +264,8 @@ openstack token issue
 ## Step 16: Run Demo Script (Optional)
 
 Creates sample network, image, and instance.
-
+Source credentials
 ```bash
-# Source credentials
 source /etc/kolla/admin-openrc.sh
 
 # Run init script
