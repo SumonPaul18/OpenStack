@@ -1,0 +1,425 @@
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ Install OpenStack on AlmaLinux 9 using Packstack  +
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#Checking System Informations
+
+hostnamectl
+
+cat /etc/redhat-release
+
+grep -E ' svm | vmx' /proc/cpuinfo
+
+lsmod | grep kvm
+
+lscpu
+
+free -h
+
+lsblk
+
+#Configure Common Setup
+
+hostnamectl set-hostname cloud
+
+ip a
+
+yum install nano -y
+dnf install wget -y
+
+#Need to Configure Static IP
+
+#Check Network Card Info file
+
+ls /etc/sysconfig/network-scripts/
+
+#Note: If OS are Almalinux 9 may be couldn't find NIC file in network-scripts folder. 
+#This problem for solutions:
+
+#Enable CRB  Repository
+
+dnf config-manager --set-enabled crb
+
+#Install Epel and Epel Next on Almalinux 9
+
+dnf install epel-release -y
+
+#Working On AlmaLinux 9
+
+dnf install centos-release-openstack-yoga -y
+
+yum clean all
+
+# Install network-scripts package
+
+yum install network-scripts -y
+
+# Enable/Start Network Service
+
+systemctl status network
+systemctl start network
+systemctl enable network
+
+systemctl restart network
+
+#Check Network Card Info file
+
+ls /etc/sysconfig/network-scripts/
+
+nano /etc/sysconfig/network-scripts/ifcfg-enp2s0
+
+
+HWADRR=1c:1b:0d:2b:12:93
+NM_CONTROLLED=no
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=192.168.0.50
+PREFIX=24
+GATEWAY=192.168.0.1
+DNS1=8.8.8.8
+DNS2=8.8.4.4
+DEVICE=enp2s0
+
+nmcli connection up enp2s0
+
+ip a s enp2s0
+
+systemctl restart NetworkManager
+
+ping google.com
+
+cp /etc/sysconfig/network-scripts/ifcfg-enp2s0 /etc/sysconfig/network-scripts/ifcfg-enp2s0.bak
+
+cat /etc/sysconfig/network-scripts/ifcfg-enp2s0
+
+#Edit Hosts file:
+echo "192.168.0.50 cloud.paulco.xyz cloud" >> /etc/hosts
+
+#Check SELinux
+
+getenforce
+
+#Disable SELinux
+
+#setenforce 0
+
+sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+
+# Disable Firewalld
+systemctl disable firewalld
+systemctl stop firewalld
+
+# Disable/Stop NetworkManager
+systemctl status NetworkManager
+systemctl disable NetworkManager
+systemctl stop NetworkManager
+
+#systemctl restart NetworkManager
+
+ifup enp0s3
+
+#ifdown enp0s3
+
+#systemctl mask NetworkManager.service
+#systemctl stop NetworkManager.service
+#systemctl disable NetworkManager.service
+#systemctl list-unit-files | grep NetworkManager
+
+++++++++++++++++++++++++++++++++++++
+
+yum autoremove epel-release
+
+yum autoremove openstack-packstack
+ 
+yum clean all
+
+yum repolist
+
+yum update -y && yum upgrade -y
+
+reboot
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
++ Install & Configure OpenStack-PackStack        +
+++++++++++++++++++++++++++++++++++++++++++++++++++
+#For AlmaLinux 9
+
+dnf config-manager --set-enabled crb
+
+#Working On AlmaLinux 9
+dnf install centos-release-openstack-yoga
+
+#Install Openstack-Packstack Package
+
+#dnf install -y openstack-packstack
+
+yum install -y openstack-packstack
+
+yum repolist
+
+yum update -y
+
+packstack --version
+
+packstack --help
+
+++++++++++++++++ Generate Answers +++++++++++++
+
++++++++++++++++++++++++++++++++++++++++++++++++
++ Pre-Installation with Generate Answers file +
++++++++++++++++++++++++++++++++++++++++++++++++
+
+packstack --os-neutron-ml2-tenant-network-types=vxlan \
+--ntp-servers=0.asia.pool.ntp.org,1.asia.pool.ntp.org,2.asia.pool.ntp.org,3.asia.pool.ntp.org \
+--os-neutron-ovs-bridge-interfaces=br-ex:enp2s0 \
+--os-neutron-ml2-mechanism-drivers=openvswitch \
+--os-neutron-ml2-type-drivers=vxlan,flat \
+--os-neutron-l2-agent=openvswitch \
+--keystone-admin-passwd=openstack \
+--provision-demo=n \
+--os-heat-install=y \
+--gen-answer-file /root/answers.txt
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+##Custom Installation After Generate Answers file##
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+packstack --gen-answer-file /root/answers.txt
+
+#Take Copy the answes file
+
+cp answers.txt copy.answers.txt
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+##Important: Edit the file whats we install 
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+nano answers.txt
+
+>>Change to y/n
+
+CONFIG_NTP_SERVERS=0.asia.pool.ntp.org,1.asia.pool.ntp.org,2.asia.pool.ntp.org,3.asia.pool.ntp.org
+
+CONFIG_CONTROLLER_HOST=192.168.10.10
+
+CONFIG_COMPUTE_HOSTS=192.168.10.10
+
+CONFIG_NETWORK_HOSTS=192.168.10.10
+
+CONFIG_STORAGE_HOST=192.168.10.10
+
+CONFIG_KEYSTONE_ADMIN_PW=openstack
+++++++++++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++ Networking +++++++++++++++++++
+#search and change Bridge
+CONFIG_NEUTRON_OVS_BRIDGE_IFACES=br-ex:enp0s3
+CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS=openvswitch
+CONFIG_NEUTRON_L2_AGENT=openvswitch
+
+# Disable Nagios
+CONFIG_NAGIOS_INSTALL=n
+
+##Disable the demo provisioning
+CONFIG_PROVISION_DEMO=n
+
+++++++++++++++++++++++++++++++++++
+##Installation OpenStack##
+++++++++++++++++++++++++++++++++++
+#Run bellow command without #
+
+packstack --answer-file #/root/answers.txt | tee openstack-Installation-log.txt
+
+++++++++++++++++++++++++++++++++++
+
+## View Installation Log ##
+
+# The installation log file is available at: 
+
+tail -f /var/tmp/packstack/latest/openstack-setup.log
+ 
+# The generated manifests are available at: 
+
+tail -f /var/tmp/packstack/20230119-111007-GkD8Cn/manifests
+
+++++++++++++++++++++++++++++++++++
+
+++++++++++++++++++++++++++++++++++
+#Install OpenStack WithOut Demo
+++++++++++++++++++++++++++++++++++
+#packstack --allinone --provision-demo=n
+
+++++++++++++++++++++++++++++++++++
+#Install OpenStack With Demo
+++++++++++++++++++++++++++++++++++
+#packstack --allinone
+
+
+ **** Installation Completed Successfully ******
+
+++++++++++++++++++++++++++++++++++
+#After Installation Complete     +
+++++++++++++++++++++++++++++++++++
+#Access OpenStack from CLI / Horizon Dashboard
+------------------------------------------------
+source ~/keystonerc_admin
+
+openstack service list
+
+#To access Horizon Dashboard use the URL: 
+#http://ServerIPAddress/dashboard.
+
+http://192.168.0.50/dashboard
+
+#Login Credentials in Here:
+
+cat ~/keystonerc_admin
+
+###################################
+# After Installation Complete     #
+###################################
+#After Installation Completed Configuration OVS Bridge Networking
+#Create an external OVS bridge on your interface
+
+## Move your static route for configured interface to br-ex.
+
+#cp /etc/sysconfig/network-scripts/ifcfg-eno1 /etc/sysconfig/network-scripts/main-eno1
+
+cp /etc/sysconfig/network-scripts/ifcfg-enp0s9 /etc/sysconfig/network-scripts/ifcfg-br-ex
+
+nano /etc/sysconfig/network-scripts/ifcfg-enp0s9
+
+DEVICE=enp0s9
+NAME=enp0s9
+DEVICETYPE=ovs
+TYPE=OVSPort
+OVS_BRIDGE=br-ex
+ONBOOT=yes
+BOOTPROTO=none
+
+nano /etc/sysconfig/network-scripts/ifcfg-br-ex
+
+HWADRR=08:00:27:c6:34:51
+NM_CONTROLLED=no
+ONBOOT=yes
+IPADDR=10.0.2.40
+PREFIX=24
+GATEWAY=10.0.2.2
+DEVICE=br-ex
+NAME=br-ex
+DEVICETYPE=ovs
+OVSBOOTPROTO=static
+TYPE=OVSBridge
+OVS_EXTRA="set bridge br-ex fail_mode=standalone"
+
+
+systemctl restart network.service
+
+ovs-vsctl show
+
+#ovs-vsctl add-br br-ex
+
+## Add the network physical interface to the br-ex bridge in Open vSwitch.
+
+#ovs-vsctl add-port br-ex eno1; systemctl restart network.service
+
+#######################
+# Manage OpenVSwitch  #
+#######################
+
+yum install openvswitch libibverbs -y
+
+or
+
+systemctl enable --now openvswitch
+
+systemctl status openvswitch
+
+systemctl restart openvswitch
+
+ovs-vsctl -V
+
+systemctl restart openstack* neutron* libvirtd
+
+systemctl status openstack* neutron* libvirtd
+
+systemctl restart neutron*
+
+
+##########################
+#Configuration OpenStack #
+##########################
+
+
+
+
+
+################################################
+# Configure Networking in OpenStack by Cli     #
+################################################
+
+##Create OpenStack private Network.
+
+openstack network create private
+
+##Create subnet for private Network.
+
+openstack subnet create --network private --allocation-pool start=10.1.1.50,end=10.1.1.200 --dns-nameserver 8.8.8.8 --subnet-range 10.1.1.0/24 private_subnet
+
+##Create a public network.
+
+openstack network create --provider-network-type flat --provider-physical-network extnet --external public
+
+##Create subnet for public Network.
+
+openstack subnet create --network public --allocation-pool start=192.168.0.100,end=192.168.0.200 --no-dhcp --dns-nameserver 8.8.8.8 --subnet-range 192.168.0.0/24 public_subnet
+
+##Add a new router and configure router interfaces.
+
+openstack router create --no-ha core-router
+
+##Add Interface in Router
+
+openstack router set --external-gateway public core-router
+
+openstack router add subnet core-router private_subnet
+
+ip netns show
+............................
+##Now Download Cirros image 
+............................
+
+wget http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img
+
+..................................
+Upload Image on OpenStack Cloud
+..................................
+
+openstack image create --disk-format qcow2 --container-format bare --public --file cirros-0.5.1-x86_64-disk.img  cirros
+
+openstack image list
+
+#Ubuntu Cloud Images Link
+
+https://cloud-images.ubuntu.com/
+
+wget http://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+
+openstack image create --disk-format qcow2 --container-format bare --public --file jammy-server-cloudimg-amd64.img ubuntu-jammy
+
+#wget https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-arm64.img
+
+#openstack image delete cirros
+
+
+
+++++++++++++++++++++++++++++++++
+Remove or Uninstall OpenStack  +
+++++++++++++++++++++++++++++++++
+#If you need to uninstall openstack
+-------------------------------------
+#yum -y remove openstack-*
+
+++++++++++++++++++++++++++++++++ Finish ++++++++++++++++++++++++++++++++
