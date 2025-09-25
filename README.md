@@ -3,7 +3,7 @@
 
 > **🎯 Audience**: Cloud Engineers • DevOps Professionals • System Administrators • IT Students • OpenStack Enthusiasts  
 > **📅 Last Updated**: April 2025  
-> **🧑‍💻 Author**: Sumon Paul • [Cloud Engineer YouTube Channel](https://youtube.com/@CloudEngineer)  
+> **🧑‍💻 Author**: Sumon Paul • [**Cloud Engineer** YouTube Channel](https://www.youtube.com/@cloudengineer187)  
 > **🔖 Tags**: `#OpenStack` `#PrivateCloud` `#KollaAnsible` `#PackStack` `#CloudComputing` `#IaaS`
 
 ![OpenStack Banner](https://docs.openstack.org/www/assets/images/openstack-logo-full.svg)
