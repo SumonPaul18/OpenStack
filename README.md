@@ -137,6 +137,7 @@ OpenStack can be deployed in **many ways**, depending on your use case, scale, a
 ✅ **2. PackStack (RDO-based, All-in-One)**  
 📁 Path: [`/deployment-tools/packstack/`](deployment-tools/packstack/)  
 📘 Guides:
+- [Install-OpenStack-PackStack-Using-Shell-Script](https://github.com/SumonPaul18/openstack-packstack)
 - [Install OpenStack on AlmaLinux using PackStack (.txt)](deployment-tools/packstack/Install%20OpenStack%20on%20AlmaLinux%20using%20PackStack.txt)
 - [Install OpenStack-PackStack on AlmaLinux 9](deployment-tools/packstack/Install%20OpenStack-PackStack%20on%20AlmaLinux%209.txt)
 - [PDF Version (Offline)](deployment-tools/packstack/Install%20OpenStack%20on%20AlmaLinux%20using%20PackStack.pdf)
