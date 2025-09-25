@@ -318,7 +318,8 @@ Found a typo? Have an improvement?
 👉 **Open an Issue** or **Submit a Pull Request**!
 
 🔗 **Connect**:
-- YouTube: [Cloud Engineer by Sumon Paul](https://youtube.com/@CloudEngineer)
+- LinkedIn: [sumonpaul](https://www.linkedin.com/in/sumonpaul/)
+- YouTube: [Cloud Engineer by Sumon Paul](https://www.youtube.com/@cloudengineer187)
 - GitHub: [@SumonPaul18](https://github.com/SumonPaul18)
 
 ---
