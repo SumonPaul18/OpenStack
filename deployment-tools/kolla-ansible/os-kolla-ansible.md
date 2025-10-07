@@ -1,4 +1,6 @@
-### USER
+## Prompt:
+---
+```
 ## Installation OpenStack Xena on VM Cloud
 
 ## Environment
@@ -235,7 +237,8 @@ If you want to see my openstack installation article :
 
 
 আমাকে এই installation guides সম্পর্কে বিস্তারিত বলুন
-
+```
+---
 ### ASSISTANT
 অবশ্যই! নিচের গাইডটি **OpenStack Xena**-এর একটি **All-in-One (AIO)** সংস্করণ ইনস্টল করার জন্য, যা **Kolla-Ansible** ব্যবহার করে একটি ভার্চুয়াল মেশিনে (VM) প্রোডাকশন-রেডি মতো সেটআপ তৈরি করে। এখানে আমি ধাপে ধাপে সম্পূর্ণ গাইডটি বিস্তারিতভাবে ব্যাখ্যা করছি, যাতে আপনি সহজে বুঝতে পারেন এবং বাস্তবায়ন করতে পারেন।
 
