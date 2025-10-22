@@ -101,7 +101,6 @@ pip install dbus-python
 ### 3. Clone & Install Kolla-Ansible from Git
 
 ```bash
-cd ~
 git clone --branch stable/2025.1 https://opendev.org/openstack/kolla-ansible
 ```
 #### Install Python dependencies
