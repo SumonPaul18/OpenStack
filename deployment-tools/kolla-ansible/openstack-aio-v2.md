@@ -192,7 +192,7 @@ Save and exit (`Ctrl+O`, Enter, `Ctrl+X`).
 Installs Docker and other required tools.
 
 ```bash
-./kolla-ansible bootstrap-servers -i ../../all-in-one
+kolla-ansible bootstrap-servers -i ../../all-in-one
 ```
 
 ---
