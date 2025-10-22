@@ -226,7 +226,7 @@ kolla-ansible deploy -i all-in-one
 ### 12. Generate Admin Credentials
 
 ```bash
-./kolla-ansible post-deploy
+kolla-ansible post-deploy -i ~/all-in-one
 ```
 
 > ✅ Output: `/etc/kolla/clouds.yaml` and `/etc/kolla/admin-openrc.sh`
@@ -262,8 +262,7 @@ openstack token issue
 Creates sample network, image, and instance.
 
 ```bash
-cd ..
-./init-runonce
+kolla-ansible/tools/init-runonce
 ```
 
 > ⚠️ Only for testing! Do not run in production.
@@ -298,10 +297,10 @@ grep keystone_admin_password /etc/kolla/passwords.yml
 
 | Task | Command |
 |------|--------|
-| Redeploy (e.g., after config change) | `kolla-ansible deploy -i ../../all-in-one` |
-| Restart specific service (Nova) | `kolla-ansible deploy -i ../../all-in-one --tags nova` |
-| Stop all containers | `kolla-ansible stop -i ../../all-in-one` |
-| Pull latest images | `kolla-ansible pull -i ../../all-in-one` |
+| Redeploy (e.g., after config change) | `kolla-ansible deploy -i ~/all-in-one` |
+| Restart specific service (Nova) | `kolla-ansible deploy -i ~/all-in-one --tags nova` |
+| Stop all containers | `kolla-ansible stop -i ~/all-in-one` |
+| Pull latest images | `kolla-ansible pull -i ~/all-in-one` |
 | View logs | `docker logs <container_name>` |
 | List running containers | `docker ps` |
 
@@ -313,10 +312,10 @@ When upgrading to a new version:
 
 ```bash
 # Pull new images
-kolla-ansible pull -i ../../all-in-one
+kolla-ansible pull -i ~/all-in-one
 
 # Run upgrade playbook
-kolla-ansible upgrade -i ../../all-in-one
+kolla-ansible upgrade -i ~/all-in-one
 ```
 
 > ⚠️ Always backup first!
@@ -328,7 +327,7 @@ kolla-ansible upgrade -i ../../all-in-one
 To completely remove OpenStack:
 
 ```bash
-kolla-ansible destroy -i ../../all-in-one --yes-i-really-really-mean-it
+kolla-ansible destroy -i ~/all-in-one --yes-i-really-really-mean-it
 ```
 
 > ⚠️ **Warning**: This deletes **all data**, including volumes and databases.
@@ -360,6 +359,10 @@ failed: [localhost] ... ModuleNotFoundError: No module named 'docker'
 
 Install `docker` in the **Ansible runtime environment**:
 
+```
+pip install docker
+```
+or
 ```bash
 /opt/ansible-runtime/bin/pip install docker
 ```
@@ -376,6 +379,11 @@ import dbus; ModuleNotFoundError: No module named 'dbus'
 **✅ Solution:**
 
 Install `dbus-python` in the Ansible runtime:
+
+```
+pip install dbus-python
+```
+or
 
 ```bash
 /opt/ansible-runtime/bin/pip install dbus-python
