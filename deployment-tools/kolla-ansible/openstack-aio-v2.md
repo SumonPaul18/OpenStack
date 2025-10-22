@@ -194,7 +194,7 @@ Save and exit (`Ctrl+O`, Enter, `Ctrl+X`).
 Installs Docker and other required tools.
 
 ```bash
-kolla-ansible bootstrap-servers -i ../../all-in-one
+kolla-ansible bootstrap-servers -i all-in-one
 ```
 
 ---
@@ -202,7 +202,7 @@ kolla-ansible bootstrap-servers -i ../../all-in-one
 ### 10. Run Pre-Deployment Checks
 
 ```bash
-kolla-ansible prechecks -i ../../all-in-one
+kolla-ansible prechecks -i all-in-one
 ```
 
 > ❌ If it fails due to missing Python modules, see **[Troubleshooting](#-troubleshooting--common-issues)** below.
@@ -214,7 +214,7 @@ kolla-ansible prechecks -i ../../all-in-one
 Deploy all services in containers:
 
 ```bash
-kolla-ansible deploy -i ../../all-in-one
+kolla-ansible deploy -i all-in-one
 ```
 
 > 🕐 This may take 10–20 minutes.
