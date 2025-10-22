@@ -69,7 +69,7 @@ We'll use:
 
 ```bash
 # Update package list
-apt update
+sudo apt update && sudo apt upgrade -y
 
 # Install system build tools and Python dependencies
 apt install -y git python3-dev libffi-dev gcc libssl-dev libdbus-glib-1-dev python3-venv
@@ -89,6 +89,8 @@ apt install -y git python3-dev libffi-dev gcc libssl-dev libdbus-glib-1-dev pyth
 python3 -m venv /opt/venv-kolla
 source /opt/venv-kolla/bin/activate
 pip install --upgrade pip
+pip install docker
+pip install dbus-python
 ```
 
 > 🔁 Keep this environment activated for all steps!
