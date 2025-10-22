@@ -67,11 +67,12 @@ We'll use:
 
 ### 1. Update System & Install Dependencies
 
-```bash
-# Update package list
+#### Update package list
+```
 sudo apt update && sudo apt upgrade -y
-
-# Install system build tools and Python dependencies
+```
+#### Install system build tools and Python dependencies
+```
 apt install -y git python3-dev libffi-dev gcc libssl-dev libdbus-glib-1-dev python3-venv
 ```
 
@@ -102,8 +103,9 @@ pip install dbus-python
 ```bash
 cd ~
 git clone --branch stable/2025.1 https://opendev.org/openstack/kolla-ansible
-
-# Install Python dependencies
+```
+#### Install Python dependencies
+```
 pip install ./kolla-ansible
 ```
 
