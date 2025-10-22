@@ -140,8 +140,7 @@ kolla-ansible install-deps
 ### 7. Generate Passwords
 
 ```bash
-cd kolla-ansible/tools
-./generate_passwords.py
+kolla-ansible/tools/generate_passwords.py
 ```
 
 > 🔐 All passwords are now securely generated in `/etc/kolla/passwords.yml`
