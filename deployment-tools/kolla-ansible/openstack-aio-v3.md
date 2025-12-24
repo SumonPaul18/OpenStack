@@ -3,8 +3,8 @@ sudo ovs-vsctl list-ports br-ex
 ```
 #### Output like bellow
 
-> enp4s0
-> phy-br-ex
+    enp4s0
+    phy-br-ex
 
 ```
 cat /etc/kolla/globals.yml
