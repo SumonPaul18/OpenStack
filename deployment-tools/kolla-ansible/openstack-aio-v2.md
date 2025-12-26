@@ -49,6 +49,7 @@ Ensure your VM meets these requirements:
 | **User Privileges** | Root access or sudo rights |
 
 ### 🖥️  **Our Environment**: 
+
 > ✅ 2+ vCPUs
 > ✅ 8+ GB RAM
 > ✅ 40+ GB Disk
