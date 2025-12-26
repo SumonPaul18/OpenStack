@@ -1,7 +1,8 @@
 # 🚀 OpenStack Single-Node Deployment using Kolla Ansible  
-### *A Complete, Copy-Paste Ready Guide (Based on Official Docs: 2025.1)*
+### *Based on Official Guide: [Kolla Ansible 2025.1 Development Quickstart](https://docs.openstack.org/kolla-ansible/2025.1/user/quickstart-development.html)*  
+**✅ All-in-One (AIO) Setup | ✅ VirtualBox VM | ✅ Fixed Common Issues**
 
-> ✅ **Perfect for Evaluation, Learning & Development**  
+> ✅ **Perfect for Evaluation, Learning Development & Production**  
 > 🔧 Deploy OpenStack All-in-One with Kolla Ansible — Fast, Reliable & Professional
 
 ---
@@ -47,7 +48,9 @@ Ensure your VM meets these requirements:
 | **Network Interfaces** | 3 NICs (NAT, Host-Only, Bridged) |
 | **User Privileges** | Root access or sudo rights |
 
-### 🖥️ Your VM Network Setup (Example)
+### 🖥️  **Our Environment**: 
+> - Ubuntu 24.04 / Rocky Linux 9  
+> - 3 NICs:
 | Interface | Type | IP Address | Purpose |
 |---------|------|------------|--------|
 | `enp0s3` | NAT | `10.0.2.15` | Internet access |
