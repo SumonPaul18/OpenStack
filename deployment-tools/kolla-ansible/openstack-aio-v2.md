@@ -49,8 +49,12 @@ Ensure your VM meets these requirements:
 | **User Privileges** | Root access or sudo rights |
 
 ### 🖥️  **Our Environment**: 
-> - Ubuntu 24.04 / Rocky Linux 9  
-> - 3 NICs:
+> ✅ 2+ vCPUs
+> ✅ 8+ GB RAM
+> ✅ 40+ GB Disk
+> ✅ OS: Ubuntu 24.04.X LTS 
+> ✅ 3 Network Interfaces (as described)
+
 | Interface | Type | IP Address | Purpose |
 |---------|------|------------|--------|
 | `enp0s3` | NAT | `10.0.2.15` | Internet access |
