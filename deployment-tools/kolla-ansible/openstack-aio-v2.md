@@ -51,9 +51,13 @@ Ensure your VM meets these requirements:
 ### 🖥️  **Our Environment**: 
 
 > ✅ 2+ vCPUs
+
 > ✅ 8+ GB RAM
+
 > ✅ 40+ GB Disk
-> ✅ OS: Ubuntu 24.04.X LTS 
+
+> ✅ OS: Ubuntu 24.04.X LTS
+
 > ✅ 3 Network Interfaces (as described)
 
 | Interface | Type | IP Address | Purpose |
@@ -66,6 +70,8 @@ We'll use:
 - `enp0s8` → `network_interface`
 - `enp0s9` → `neutron_external_interface`
 - VIP → `192.168.10.250`
+
+Run all commands as **root** or with `sudo`.
 
 ---
 
