@@ -82,31 +82,49 @@ echo "192.168.0.51 $(hostname)" | sudo tee -a /etc/hosts
 python3 -m venv /opt/venv-kolla
 source /opt/venv-kolla/bin/activate
 pip install --upgrade pip
+pip install docker
+pip install dbus-python
 ```
 
 ### 3.2 Install Kolla-Ansible
 ```bash
-pip install "kolla-ansible>=2025.1" -c https://releases.openstack.org/constraints/upper/2025.1
+git clone --branch stable/2025.1 https://opendev.org/openstack/kolla-ansible
+```
+### 3.3 Install Python dependencies
+```
+pip install ./kolla-ansible
 ```
 
-### 3.3 Copy Configuration Files
+### 3.4 Create Config Directory
+ 
 ```bash
-sudo mkdir -p /etc/kolla
-sudo chown $USER:$USER /etc/kolla
-cp -r /opt/venv-kolla/share/kolla-ansible/etc_examples/kolla/* /etc/kolla/
+mkdir -p /etc/kolla
+chown $USER:$USER /etc/kolla/
+```
+### 3.5 Copy Configuration Files
+```
+cp -r kolla-ansible/etc/kolla/* /etc/kolla/
+cp kolla-ansible/ansible/inventory/* .
 ```
 
-### 3.4 Generate Passwords
+### 3.6 Install Ansible Galaxy Dependencies
+```
+kolla-ansible install-deps
+```
+### 3.7 Generate Passwords
 ```bash
-kolla-genpwd
+kolla-ansible/tools/generate_passwords.py
 ```
-
+> 🔐 All passwords are now securely generated in /etc/kolla/passwords.yml
 ---
 
 ## 4. Configure Kolla
 
 ### 4.1 Configure `/etc/kolla/globals.yml`
-
+```
+nano /etc/kolla/globals.yml
+```
+### Update with your settings:
 ```yaml
 # Basic Settings
 kolla_base_distro: "ubuntu"
@@ -145,6 +163,7 @@ host_network_mode: "yes"
 # Nova Auto-Start (Fixes Instance Recovery)
 nova_compute_privileged: "yes"
 ```
+> Save and exit (Ctrl+O, Enter, Ctrl+X).
 
 > 🔑 **Key Notes**:
 > - `neutron_bridge_mappings: "physnet1:br-ex"` → Physical network name is `physnet1`
