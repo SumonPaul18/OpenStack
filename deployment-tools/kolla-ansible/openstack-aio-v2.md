@@ -561,6 +561,203 @@ If you add Ceph storage later:
 
 ---
 
+### ❌ Issue 7: Nova Compute Failed to Register (Libvirt SASL Authentication Error)
+
+---
+
+#### 🔴 Error Title
+**"The Nova compute service failed to register itself"**  
+*(Caused by: Libvirt SASL Authentication Failed)*
+
+---
+
+#### 📋 Error Description
+
+When running `kolla-ansible deploy`, the playbook fails at the nova-cell role with this message:
+
+```
+fatal: [localhost]: FAILED! => {"msg": "The Nova compute service failed to register itself on the following hosts: controller"}
+```
+
+**Related log errors from `nova-compute.log`:**
+```
+nova.exception.HypervisorUnavailable: Connection to the hypervisor is broken on host
+libvirt.libvirtError: authentication failed: authentication failed
+```
+
+**What this means:**  
+The `nova-compute` container cannot connect to the `nova-libvirt` container because the SASL (Simple Authentication and Security Layer) password verification is failing.
+
+---
+
+#### 🎯 Root Causes
+
+| Cause | Explanation |
+|-------|-------------|
+| **1. Corrupted passwd.db file** | The `/etc/libvirt/passwd.db` file (which stores SASL passwords) got corrupted or has wrong format. This is a binary file, and sometimes it gets broken during container startup or config copy. |
+| **2. Password mismatch** | The password in `nova-compute`'s `auth.conf` does not match the password in `nova-libvirt`'s `passwd.db`. |
+| **3. Container startup timing** | `nova-compute` tries to connect before `nova-libvirt` is fully ready. This is a race condition. |
+| **4. Incomplete config propagation** | After updating `passwords.yml`, the new password was not properly copied to the containers. |
+
+---
+
+#### ✅ Solutions
+
+#### 🔹 Quick Fix (For Lab/Testing Only)
+Disable SASL authentication temporarily to complete deployment:
+
+1. Edit `/etc/kolla/globals.yml`:
+   ```yaml
+   libvirt_enable_sasl: false
+   nova_libvirt_enable_sasl: false
+   ```
+
+2. Re-deploy only nova services:
+   ```bash
+   kolla-ansible deploy -i <inventory> --limit controller --tags nova
+   ```
+
+> ⚠️ **Warning:** Only use this for development or testing. Do not use in production.
+
+---
+
+#### 🔹 Permanent Fix (For Production)
+Fix the SASL authentication properly:
+
+#### Step 1: Verify passwords.yml
+```bash
+grep libvirt_sasl /etc/kolla/passwords.yml
+```
+Make sure you see:
+```yaml
+libvirt_sasl_username: nova
+libvirt_sasl_password: <your_password>
+```
+
+#### Step 2: Reset passwd.db in nova_libvirt container
+```bash
+#### Enter the container
+docker exec -it nova_libvirt bash
+
+#### Remove corrupted file
+rm -f /etc/libvirt/passwd.db
+
+#### Create new clean file
+touch /etc/libvirt/passwd.db
+chmod 640 /etc/libvirt/passwd.db
+chown root:nova /etc/libvirt/passwd.db
+
+#### Add correct password entry (use your actual password)
+SASL_PASS="your_password_here"
+saslpasswd2 -p -c -f /etc/libvirt/passwd.db -u openstack nova <<< "$SASL_PASS"
+
+#### Verify (use strings, not cat)
+strings /etc/libvirt/passwd.db
+> Expected output: nova@openstack:your_password_here
+
+#### Exit container
+exit
+```
+
+#### Step 3: Verify auth.conf in nova_compute container
+```bash
+docker exec -it nova_compute bash
+cat /var/lib/nova/.config/libvirt/auth.conf
+```
+Make sure the `password` value matches the one in `passwd.db`.
+
+#### Step 4: Restart containers in correct order
+```bash
+docker restart nova_libvirt
+sleep 10
+docker restart nova_compute
+```
+
+#### Step 5: Verify the fix
+```bash
+# Check nova-compute logs
+docker logs -tf nova_compute | grep -E "Connected|ERROR"
+
+# Check OpenStack service status
+source /etc/kolla/admin-openrc.sh
+openstack compute service list --service nova-compute
+```
+✅ Success: Status should show `up` and `:-)`
+
+---
+
+#### 🔍 Verification Checklist
+
+Run these commands to confirm everything is working:
+
+```bash
+# 1. Check container status
+docker ps | grep -E "nova_compute|nova_libvirt"
+
+# 2. Check passwd.db content (use strings)
+docker exec nova_libvirt strings /etc/libvirt/passwd.db
+
+# 3. Check auth.conf content
+docker exec nova_compute cat /var/lib/nova/.config/libvirt/auth.conf
+
+# 4. Test libvirt connection
+docker exec nova_compute virsh -c qemu+tcp://controller/system list
+
+# 5. Check OpenStack service
+source /etc/kolla/admin-openrc.sh
+openstack compute service list --service nova-compute
+```
+
+---
+
+#### 🛡️ Prevention Tips
+
+| Tip | Why It Helps |
+|-----|-------------|
+| ✅ Always run full `kolla-ansible deploy` after changing `passwords.yml` | Ensures all configs are properly copied to containers |
+| ✅ Use `strings` command to check `passwd.db` | `cat` shows garbage for binary files; `strings` shows readable content |
+| ✅ Restart `nova_libvirt` before `nova_compute` | Avoids race conditions during startup |
+| ✅ Keep `globals.yml` and `passwords.yml` in sync | Prevents password mismatch errors |
+| ✅ Test SASL disabled first in lab, then enable for production | Easier debugging during development |
+
+---
+
+#### 📊 Environment Recommendation
+
+| Environment | SASL Setting | Reason |
+|-------------|-------------|--------|
+| 🧪 Lab / Learning | `false` | Faster setup, easier debugging |
+| 🏢 Production | `true` | Required for security |
+| 🔄 Hybrid (Test → Prod) | Start `false`, then `true` | Test features first, then secure |
+
+---
+
+#### 🆘 Still Having Issues?
+
+If the problem persists, collect this information for further help:
+
+```bash
+# 1. Nova compute logs (last 50 lines)
+docker logs --tail 50 nova_compute
+
+# 2. SASL file content
+docker exec nova_libvirt strings /etc/libvirt/passwd.db
+
+# 3. Auth config
+docker exec nova_compute cat /var/lib/nova/.config/libvirt/auth.conf
+
+# 4. Libvirt network status
+docker exec nova_libvirt netstat -tlnp | grep 16509
+```
+
+> Share these outputs with your support team or community for faster troubleshooting.
+
+
+> 💡 **Final Note:** If you disabled SASL for testing and your deployment is now working, your OpenStack cloud is functional. You can enable SASL later when you are ready for production hardening.
+
+
+---
+
 ## 📜 License & Credits
 
 - **Guide Version:** 2025.1
