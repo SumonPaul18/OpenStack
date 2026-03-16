@@ -474,6 +474,93 @@ timedatectl status
 
 ---
 
+### ❌ Issue 7: Fixing "Volume group cinder-volumes not found" Error
+
+#### 1. Error Overview
+**Error Message:**
+```text
+fatal: [localhost]: FAILED! => {"changed": false, "cmd": ["vgs", "cinder-volumes"], ... 
+"stderr": "Volume group \"cinder-volumes\" not found"}
+```
+**When it happens:** 
+During `kolla-ansible prechecks` or `deploy`.
+
+#### 2. Root Cause
+*   **Default Behavior:** OpenStack Cinder uses LVM storage by default.
+*   **Requirement:** It looks for a specific Volume Group named `cinder-volumes`.
+*   **Your Setup:** You have only one disk (used for OS). No extra disk exists for Cinder.
+*   **Result:** Precheck fails because the storage group is missing.
+
+#### 3. Solution: Create a Loopback Device
+We will create a large file on your existing disk and treat it as a virtual hard disk for Cinder.
+
+#### Step 1: Create a Virtual Disk File
+Create a 20GB file named `cinder-volumes.img` in the root directory.
+```bash
+dd if=/dev/zero of=/cinder-volumes.img bs=1M count=20480
+```
+
+### Step 2: Setup Loop Device
+Connect the file to a loop device (e.g., `/dev/loop0`).
+```bash
+losetup /dev/loop0 /cinder-volumes.img
+```
+
+### Step 3: Create Physical Volume (PV)
+Initialize the loop device for LVM.
+```bash
+pvcreate /dev/loop0
+```
+
+### Step 4: Create Volume Group (VG)
+Create the required group named `cinder-volumes`.
+```bash
+vgcreate cinder-volumes /dev/loop0
+```
+
+#### 4. Verification
+**Check if VG exists:**
+```bash
+vgs
+```
+*You should see `cinder-volumes` in the list.*
+
+**Re-run Prechecks:**
+```bash
+kolla-ansible prechecks -i all-in-one
+```
+*The Cinder error should be gone.*
+
+## 5. Important Notes
+
+#### A. Persistence (After Reboot)
+The loop device will disconnect after reboot. To fix this automatically:
+1.  Open `/etc/rc.local` (create if not exists).
+2.  Add these lines before `exit 0`:
+    ```bash
+    losetup /dev/loop0 /cinder-volumes.img
+    vgchange -ay
+    ```
+3.  Make sure `/etc/rc.local` is executable.
+
+#### B. Storage Capacity
+*   **Total Size:** 20 GB.
+*   **Usable Size:** ~18 GB (some space used for LVM metadata).
+*   **Usage:** You can create multiple volumes (e.g., 10 volumes of 1GB each). Once full, you cannot create new volumes.
+
+#### C. Performance
+*   **Lab/Testing:** Perfectly fine.
+*   **Production:** Not recommended. It is slower than a physical disk.
+
+#### D. Future Migration to Ceph
+If you add Ceph storage later:
+1.  Update `globals.yml` to enable `cinder_backend_ceph`.
+2.  Disable `cinder_backend_lvm`.
+3.  Re-run `kolla-ansible deploy`.
+4.  You do not need to delete the loopback file, but Cinder will stop using it for new volumes.
+
+---
+
 ## 📜 License & Credits
 
 - **Guide Version:** 2025.1
