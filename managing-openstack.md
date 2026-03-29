@@ -293,20 +293,23 @@ Install and Use Screen in Linux
     screen -ls
     screen -r OpenStack/ID  
 
-#
+---
+
 ### Configure OpenStack Instances Autostart after reboot
-#
-Open Nova configuration file
-####
-    nano /etc/nova/nova.conf
-####
-Add below line under the [DEFAULT] section: <br>
-By Default we find <b>#resume_guests_state_on_host_boot = false </b>  (So, we need to make it Uncomment and True).
-####
-    resume_guests_state_on_host_boot = true
-####
-    sudo systemctl restart openstack-nova-compute
-#
+
+#### Open Nova configuration file
+```
+nano /etc/nova/nova.conf
+```
+Add below line under the **[DEFAULT]** section: <br>
+By Default we find **#resume_guests_state_on_host_boot = false**  (So, we need to make it Uncomment and give vaule **True**).
+```
+resume_guests_state_on_host_boot = true
+```
+```
+sudo systemctl restart openstack-nova-compute
+```
+---
 
 
 
