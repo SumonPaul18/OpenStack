@@ -36,22 +36,27 @@ Think of this like preparing a kitchen before cooking a complex meal. You don't 
 ### 1.2 Version Compatibility Check (Official Sources)
 Always verify versions against official compatibility matrices. Here's how to do it practically:
 
-```bash
-# On OpenStack node (192.168.68.69)
-# Check Kolla-Ansible version
-kolla-ansible --version
 
-# Check OpenStack release (if already deployed)
-openstack --version
-
-# On Ceph node (192.168.68.248)
-# Check Ceph version
-ceph -v
-
-# Cross-reference with official docs:
-# - Kolla-Ansible 2025.2 supports Ceph Pacific, Quincy, Reef, Squid
-# - Ceph docs: https://docs.ceph.com/en/latest/rbd/rbd-openstack/
+#### On OpenStack node (192.168.68.69)
+#### Check Kolla-Ansible version
 ```
+kolla-ansible --version
+```
+#### Check OpenStack release (if already deployed)
+
+```
+openstack --version
+```
+
+#### On Ceph node (192.168.68.248)
+#### Check Ceph version
+```
+ceph -v
+```
+#### Cross-reference with official docs:
+#### - Kolla-Ansible 2025.2 supports Ceph Pacific, Quincy, Reef, Squid
+#### - Ceph docs: https://docs.ceph.com/en/latest/rbd/rbd-openstack/
+
 
 > 💡 **Pro Tip**: If your Ceph version is newer than what Kolla-Ansible explicitly lists, test in a lab first. Most newer Ceph versions work with older OpenStack, but the reverse isn't always true.
 
@@ -64,24 +69,28 @@ This is where you prepare the "storage backend" that OpenStack will consume. Thi
 ### 2.1 Create Dedicated Pools for OpenStack Services
 Each OpenStack service gets its own pool for isolation and performance tuning.
 
-```bash
-# SSH to any Ceph monitor node (e.g., 192.168.68.248)
-ssh admin@192.168.68.248
 
-# Create pools (adjust PG count based on your OSD count - use ceph pg calc tool)
-# For a small 3-node cluster with ~10 OSDs total, 32 PGs per pool is safe
+#### SSH to any Ceph monitor node (e.g., 192.168.68.248)
+```
+ssh admin@192.168.68.248
+```
+#### Create pools (adjust PG count based on your OSD count - use ceph pg calc tool)
+#### For a small 3-node cluster with ~10 OSDs total, 32 PGs per pool is safe
+```
 ceph osd pool create images 32 32
 ceph osd pool create volumes 32 32
 ceph osd pool create backups 32 32
 ceph osd pool create vms 32 32
-
-# Initialize pools for RBD usage (mandatory step for newer Ceph versions)
+```
+#### Initialize pools for RBD usage (mandatory step for newer Ceph versions)
+```
 rbd pool init images
 rbd pool init volumes
 rbd pool init backups
 rbd pool init vms
-
-# Verify pools exist
+```
+#### Verify pools exist
+```
 ceph osd pool ls detail
 rbd pool ls
 ```
@@ -89,52 +98,61 @@ rbd pool ls
 ### 2.2 Create Ceph Users with Minimal Permissions (Security Best Practice)
 Never use `client.admin` for OpenStack. Create service-specific users with least-privilege access.
 
-```bash
-# Create user for Glance (images pool - read/write)
+
+#### Create user for Glance (images pool - read/write)
+```
 ceph auth get-or-create client.glance \
   mon 'profile rbd' \
   osd 'profile rbd pool=images' \
   mgr 'profile rbd pool=images'
-
-# Create user for Cinder (volumes, vms pools - read/write; images pool - read-only for cloning)
+```
+#### Create user for Cinder (volumes, vms pools - read/write; images pool - read-only for cloning)
+```
 ceph auth get-or-create client.cinder \
   mon 'profile rbd' \
   osd 'profile rbd pool=volumes, profile rbd pool=vms, profile rbd-read-only pool=images' \
   mgr 'profile rbd pool=volumes, profile rbd pool=vms'
-
-# Create user for Cinder Backup (backups pool only)
+```
+#### Create user for Cinder Backup (backups pool only)
+```
 ceph auth get-or-create client.cinder-backup \
   mon 'profile rbd' \
   osd 'profile rbd pool=backups' \
   mgr 'profile rbd pool=backups'
-
-# Optional: Create user for Nova ephemeral disks (if using nova_backend_ceph)
+```
+#### Optional: Create user for Nova ephemeral disks (if using nova_backend_ceph)
+```
 ceph auth get-or-create client.nova \
   mon 'profile rbd' \
   osd 'profile rbd pool=vms' \
   mgr 'profile rbd pool=vms'
-
-# Verify users created
+```
+#### Verify users created
+```
 ceph auth ls
 ```
 
 ### 2.3 Export Keyrings and Config for OpenStack Node
 You'll copy these files to your Kolla-Ansible configuration directory.
 
-```bash
-# On Ceph node, export ceph.conf (clean version - no tabs!)
+
+#### On Ceph node, export ceph.conf (clean version - no tabs!)
+```
 ceph config generate-minimal-conf > /tmp/ceph.conf
-
-# Remove any leading tabs that break Kolla's ini parser (critical!)
+```
+#### Remove any leading tabs that break Kolla's ini parser (critical!)
+```
 sed -i 's/^\t/    /g' /tmp/ceph.conf
-
-# Export keyrings
+```
+#### Export keyrings
+```
 ceph auth get-key client.glance > /tmp/ceph.client.glance.keyring
 ceph auth get-key client.cinder > /tmp/ceph.client.cinder.keyring
 ceph auth get-key client.cinder-backup > /tmp/ceph.client.cinder-backup.keyring
 ceph auth get-key client.nova > /tmp/ceph.client.nova.keyring  # if using nova backend
-
-# Copy files to OpenStack node (192.168.68.69)
+```
+#### Copy files to OpenStack node (192.168.68.69)
+```
 scp /tmp/ceph.conf admin@192.168.68.69:/tmp/
 scp /tmp/ceph.client.*.keyring admin@192.168.68.69:/tmp/
 ```
@@ -150,33 +168,43 @@ Now you configure the "client side" - your Kolla-Ansible deployment to consume t
 ### 3.1 Prepare Kolla Configuration Directory Structure
 Kolla-Ansible uses `/etc/kolla/` for global configs and `/etc/kolla/config/<service>/` for service-specific overrides.
 
-```bash
-# On OpenStack node (192.168.68.69)
-ssh admin@192.168.68.69
 
-# Create required directories for Ceph config injection
+#### On OpenStack node (192.168.68.69)
+```
+ssh admin@192.168.68.69
+```
+#### Create required directories for Ceph config injection
+```
 sudo mkdir -p /etc/kolla/config/glance
 sudo mkdir -p /etc/kolla/config/cinder/cinder-volume
 sudo mkdir -p /etc/kolla/config/cinder/cinder-backup
 sudo mkdir -p /etc/kolla/config/nova
-
-# Copy the sanitized ceph.conf and keyrings from /tmp/ to appropriate locations
+```
+#### Copy the sanitized ceph.conf and keyrings from /tmp/ to appropriate locations
+```
 sudo cp /tmp/ceph.conf /etc/kolla/config/glance/ceph.conf
 sudo cp /tmp/ceph.conf /etc/kolla/config/cinder/ceph.conf
 sudo cp /tmp/ceph.conf /etc/kolla/config/nova/ceph.conf
-
-# Copy keyrings with correct naming and ownership expectations
+```
+#### Copy keyrings with correct naming and ownership expectations
+```
 sudo cp /tmp/ceph.client.glance.keyring /etc/kolla/config/glance/ceph.client.glance.keyring
 sudo cp /tmp/ceph.client.cinder.keyring /etc/kolla/config/cinder/cinder-volume/ceph.client.cinder.keyring
 sudo cp /tmp/ceph.client.cinder.keyring /etc/kolla/config/cinder/cinder-backup/ceph.client.cinder.keyring
 sudo cp /tmp/ceph.client.cinder-backup.keyring /etc/kolla/config/cinder/cinder-backup/ceph.client.cinder-backup.keyring
 sudo cp /tmp/ceph.client.cinder.keyring /etc/kolla/config/nova/ceph.client.cinder.keyring
-# If using nova backend:
+```
+#### If using nova backend:
+```
 sudo cp /tmp/ceph.client.nova.keyring /etc/kolla/config/nova/ceph.client.nova.keyring
 ```
 
 ### 3.2 Update Kolla globals.yml for Ceph Integration
 Edit `/etc/kolla/globals.yml` to enable Ceph backends and define authentication parameters.
+
+```
+nano /etc/kolla/globals.yml
+```
 
 ```yaml
 # === Glance Ceph Backend ===
@@ -224,17 +252,21 @@ Kolla-Ansible expects nodes in the `[storage]` group for Cinder services. If you
 ### 3.4 Deploy Configuration with Kolla-Ansible
 Now apply the configuration. Kolla will inject the Ceph configs into containers and restart services.
 
-```bash
-# Validate configuration first (always do this!)
+
+#### Validate configuration first (always do this!)
+```
 kolla-ansible -i /etc/kolla/inventory prechecks
-
-# Bootstrap servers if not done already
+```
+#### Bootstrap servers if not done already
+```
 kolla-ansible -i /etc/kolla/inventory bootstrap-servers
-
-# Deploy/reconfigure OpenStack with new Ceph settings
+```
+#### Deploy/reconfigure OpenStack with new Ceph settings
+```
 kolla-ansible -i /etc/kolla/inventory deploy
-
-# If only updating config (not full redeploy), use:
+```
+#### If only updating config (not full redeploy), use:
+```
 kolla-ansible -i /etc/kolla/inventory reconfigure
 ```
 
@@ -247,66 +279,84 @@ kolla-ansible -i /etc/kolla/inventory reconfigure
 ### 4.1 Glance: Store Images as RBD Objects
 After deployment, verify Glance can write to Ceph.
 
-```bash
-# On OpenStack node, source admin credentials
-source /etc/kolla/admin-openrc.sh
 
-# Create a test image in RAW format (QCOW2 not recommended for Ceph)
+#### On OpenStack node, source admin credentials
+```
+source /etc/kolla/admin-openrc.sh
+```
+#### Create a test image in RAW format (QCOW2 not recommended for Ceph)
+```
 wget https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
 openstack image create "cirros-ceph-test" \
   --file cirros-0.6.2-x86_64-disk.img \
   --disk-format raw \
   --container-format bare \
   --public
-
-# Verify image is stored in Ceph
-# First, get the image ID
+```
+#### Verify image is stored in Ceph
+#### First, get the image ID
+```
 openstack image show cirros-ceph-test -c id -f value
-
-# Then check Ceph RBD list (on Ceph node)
+```
+#### Then check Ceph RBD list (on Ceph node)
+```
 ssh admin@192.168.68.248
 rbd -p images ls
-# You should see an RBD image matching the Glance image ID
 ```
+#### You should see an RBD image matching the Glance image ID
+
 
 ### 4.2 Cinder: Create Volumes from Ceph Pools
 Test volume creation and attachment.
 
-```bash
-# Create a Cinder volume type (optional but recommended)
+
+#### Create a Cinder volume type (optional but recommended)
+```
 openstack volume type create ceph-rbd
 openstack volume type set --property volume_backend_name=ceph ceph-rbd
-
-# Create a 1GB volume from the 'volumes' pool
-openstack volume create --size 1 --type ceph-rbd test-ceph-volume
-
-# Check volume status
-openstack volume show test-ceph-volume
-
-# Verify in Ceph (on Ceph node)
-rbd -p volumes ls
-# Should see an RBD image named like volume-<uuid>
 ```
+#### Create a 1GB volume from the 'volumes' pool
+```
+openstack volume create --size 1 --type ceph-rbd test-ceph-volume
+```
+#### Check volume status
+```
+openstack volume show test-ceph-volume
+```
+#### Verify in Ceph (on Ceph node)
+```
+rbd -p volumes ls
+```
+#### Should see an RBD image named like volume-<uuid>
+
 
 ### 4.3 Nova: Boot Instances with Ceph-Backed Disks
 Test both ephemeral disk and boot-from-volume scenarios.
 
-```bash
-# Scenario 1: Boot with ephemeral disk on Ceph (if nova_backend_ceph enabled)
+
+#### Scenario 1: Boot with ephemeral disk on Ceph (if nova_backend_ceph enabled)
+```
 openstack server create --flavor m1.tiny --image cirros-ceph-test \
   --key-name mykey test-ephemeral-ceph
-
-# Scenario 2: Boot from Cinder volume (copy-on-write clone from Glance image)
+```
+#### Scenario 2: Boot from Cinder volume (copy-on-write clone from Glance image)
+```
 openstack volume create --size 2 --image cirros-ceph-test ceph-boot-volume
 openstack server create --flavor m1.tiny --volume ceph-boot-volume \
   --key-name mykey test-boot-from-volume
-
-# Verify instance is running
+```
+#### Verify instance is running
+```
 openstack server list
-
-# Check Ceph for active RBD objects (on Ceph node)
-rbd -p vms ls          # for ephemeral disks
-rbd -p volumes ls      # for boot-from-volume
+```
+#### Check Ceph for active RBD objects (on Ceph node)
+#### for ephemeral disks
+```
+rbd -p vms ls    
+```
+#### for boot-from-volume
+```
+rbd -p volumes ls    
 ```
 
 > 🚀 **Performance Note**: Boot-from-volume with Ceph enables copy-on-write cloning. New volumes are created instantly as metadata pointers, not full data copies.
@@ -318,49 +368,64 @@ rbd -p volumes ls      # for boot-from-volume
 ### 5.1 End-to-End Functional Test
 Create a realistic workload to validate the integration.
 
-```bash
-# 1. Upload a RAW image to Glance (Ceph backend)
+
+#### 1. Upload a RAW image to Glance (Ceph backend)
+
+```
 openstack image create "ubuntu-24.04" \
   --file ubuntu-24.04-server-cloudimg-amd64.img \
   --disk-format raw \
   --container-format bare \
   --public
-
-# 2. Create a Cinder volume from that image
+```
+#### 2. Create a Cinder volume from that image
+```
 openstack volume create --size 10 --image ubuntu-24.04 prod-volume
-
-# 3. Boot an instance from the volume
+```
+#### 3. Boot an instance from the volume
+```
 openstack server create --flavor m1.small --volume prod-volume \
   --network private --key-name production-key prod-vm
-
-# 4. Attach an additional Cinder volume to the running instance
+```
+#### 4. Attach an additional Cinder volume to the running instance
+```
 openstack volume create --size 5 --type ceph-rbd data-volume
 openstack server add volume prod-vm data-volume
-
-# 5. Verify all components in Ceph
+```
+#### 5. Verify all components in Ceph
+```
 ssh admin@192.168.68.248
-ceph -s  # Should still show HEALTH_OK
-rbd -p images ls    # Glance images
-rbd -p volumes ls   # Cinder volumes
-rbd -p vms ls       # Nova ephemeral disks (if enabled)
+```
+#### Should still show HEALTH_OK
+```
+ceph -s  
+```
+```
+rbd -p images ls
+rbd -p volumes ls
+rbd -p vms ls
 ```
 
 ### 5.2 Monitoring & Metrics Validation
 Ensure you can observe Ceph usage from OpenStack perspective.
 
-```bash
-# Check Cinder backend capabilities
+
+#### Check Cinder backend capabilities
+```
 openstack volume service list
 openstack volume backend pool list  # Should show 'ceph@ceph#volumes'
-
-# Check Glance backend
-openstack image show <image-id> -c stores -f value  # Should include 'rbd'
-
-# Monitor Ceph performance during OpenStack operations
-# On Ceph node, watch real-time I/O
-ceph -w
-# Or use ceph dashboard if enabled
 ```
+#### Check Glance backend
+```
+openstack image show <image-id> -c stores -f value  # Should include 'rbd'
+```
+#### Monitor Ceph performance during OpenStack operations
+#### On Ceph node, watch real-time I/O
+```
+ceph -w
+```
+#### Or use ceph dashboard if enabled
+
 
 ---
 
@@ -369,21 +434,24 @@ ceph -w
 ### 6.1 Adding a New Ceph Pool for OpenStack
 Need a new pool for a new project or isolation requirement?
 
-```bash
-# On Ceph node
+
+#### On Ceph node
+```
 ceph osd pool create newproject 32 32
 rbd pool init newproject
-
-# Create dedicated user
+```
+#### Create dedicated user
+```
 ceph auth get-or-create client.newproject \
   mon 'profile rbd' \
   osd 'profile rbd pool=newproject' \
   mgr 'profile rbd pool=newproject'
+```
+#### Export and copy keyring/config to OpenStack node (as in Section 2.3)
 
-# Export and copy keyring/config to OpenStack node (as in Section 2.3)
-
-# Update Kolla globals.yml for the service using this pool
-# Example for a new Cinder backend:
+#### Update Kolla globals.yml for the service using this pool
+#### Example for a new Cinder backend:
+```
 cat >> /etc/kolla/globals.yml << 'EOF'
 cinder_ceph_backends:
   - name: "default-ceph"
@@ -397,52 +465,59 @@ cinder_ceph_backends:
     pool: "newproject"
     enabled: true
 EOF
-
-# Reconfigure Cinder
+```
+#### Reconfigure Cinder
+```
 kolla-ansible -i /etc/kolla/inventory reconfigure --limit cinder
 ```
 
 ### 6.2 Rotating Ceph Keys (Security Maintenance)
 Periodically rotate service keys without downtime.
 
-```bash
-# On Ceph node, generate new key for client.cinder
+
+#### On Ceph node, generate new key for client.cinder
+```
 ceph auth get client.cinder > /tmp/cinder-old-key
 ceph auth del client.cinder
 ceph auth get-or-create client.cinder \
   mon 'profile rbd' \
   osd 'profile rbd pool=volumes, profile rbd pool=vms, profile rbd-read-only pool=images' \
   mgr 'profile rbd pool=volumes, profile rbd pool=vms'
-
-# Export new key
+```
+#### Export new key
+```
 ceph auth get-key client.cinder > /tmp/ceph.client.cinder.keyring.new
-
-# Copy to OpenStack node and update Kolla config
+```
+#### Copy to OpenStack node and update Kolla config
+```
 scp /tmp/ceph.client.cinder.keyring.new admin@192.168.68.69:/tmp/
 ssh admin@192.168.68.69
 sudo cp /tmp/ceph.client.cinder.keyring.new /etc/kolla/config/cinder/cinder-volume/ceph.client.cinder.keyring
 sudo cp /tmp/ceph.client.cinder.keyring.new /etc/kolla/config/cinder/cinder-backup/ceph.client.cinder.keyring
 sudo cp /tmp/ceph.client.cinder.keyring.new /etc/kolla/config/nova/ceph.client.cinder.keyring
-
-# Reconfigure affected services
+```
+#### Reconfigure affected services
+```
 kolla-ansible -i /etc/kolla/inventory reconfigure --limit "cinder:nova"
 ```
 
 ### 6.3 Scaling Ceph Capacity
 When your Ceph cluster grows, OpenStack automatically benefits - no reconfiguration needed.
 
-```bash
-# Add new OSDs to Ceph cluster (using cephadm or ceph-ansible)
-# Example with cephadm:
-ceph orch daemon add osd node4:/dev/sdb
 
-# Verify cluster rebalancing
+#### Add new OSDs to Ceph cluster (using cephadm or ceph-ansible)
+#### Example with cephadm:
+```
+ceph orch daemon add osd node4:/dev/sdb
+```
+#### Verify cluster rebalancing
+```
 ceph -w
 ceph osd df
-
+```
 # No OpenStack-side changes required!
 # New capacity is immediately available for volume/image creation
-```
+
 
 ---
 
@@ -461,22 +536,27 @@ ceph osd df
 ### 7.2 Log Locations for Debugging
 When things go wrong, check these logs first:
 
-```bash
-# On OpenStack node (192.168.68.69)
-# Glance logs (Ceph backend errors)
+
+#### On OpenStack node (192.168.68.69)
+#### Glance logs (Ceph backend errors)
+```
 docker logs glance_api  # or check /var/log/kolla/glance/
-
-# Cinder volume logs
+```
+#### Cinder volume logs
+```
 docker logs cinder_volume
-
-# Nova compute logs (for libvirt/RBD attach issues)
+```
+#### Nova compute logs (for libvirt/RBD attach issues)
+```
 docker logs nova_compute
-
-# Ceph client logs inside containers
+```
+#### Ceph client logs inside containers
+```
 docker exec -it cinder_volume ceph --id cinder -s
-
-# On Ceph node (192.168.68.248)
-# Cluster health and recent events
+```
+#### On Ceph node (192.168.68.248)
+#### Cluster health and recent events
+```
 ceph -s
 ceph health detail
 ceph log last 100
