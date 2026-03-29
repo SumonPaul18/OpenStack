@@ -50,6 +50,11 @@ We need to change the configuration in your `globals.yml` file to tell Nova to r
    nova_compute_resume_instances: true
    ```
    *If the file doesn't have this section, you can add it at the end.*
+### OR
+
+```
+nova_enable_resume_guests_state_on_host_boot: true
+```
 
 ### Step 3.2: Re-deploy Nova Compute
 Apply the new configuration using Kolla-Ansible. This will restart the Nova compute container with the new setting.
@@ -77,6 +82,12 @@ Exit the container:
 exit
 ```
 
+### OR
+
+```
+docker exec -it nova_compute grep "resume_guests_state_on_host_boot" /etc/nova/nova.conf
+```
+> **Expected Output:** `resume_guests_state_on_host_boot = true`
 ---
 
 ## 4. Solution 2: Enable Libvirt Autostart Flag (Crucial)
@@ -120,7 +131,23 @@ If you get a connection error on the host, Libvirt is likely inside the Docker c
 docker exec -it nova_compute virsh autostart <INSTANCE_UUID>
 ```
 
-### Step 4.4: Verify Autostart Status
+### Or Another Way
+
+#### Enable Auto-Start Flag
+Use the `openstack server set` command with the `--property` flag to enable auto-start. Replace `<instance-name-or-id>` with your actual instance details.
+
+```bash
+openstack server set --property auto_start=True <instance-name-or-id>
+```
+*Example:*
+```bash
+openstack server set --property auto_start=True my-vm
+```
+
+> **Note:** If you have multiple instances, repeat this command for each one or use a loop script.
+
+
+### Step 4.4: Verify Configuration - Autostart Status
 Confirm that the setting has been saved.
 
 **If using Host:**
@@ -136,7 +163,7 @@ docker exec -it nova_compute virsh list --all --autostart
 **Success Criteria:**
 Your instance ID or Name should appear in the list. Even if the state is `shut off`, being in this list means it **will** start automatically on the next boot.
 
-### Or Verify Autostart Status
+### Or Verify Another Way 
 
 Get your instance UUID:
 
@@ -164,6 +191,17 @@ Ensure the host's Libvirt service starts on boot:
 ```
 systemctl enable libvirtd
 systemctl status libvirtd
+```
+
+### Or Verify Another Way 
+
+Confirm that the property has been applied successfully.
+```bash
+openstack server show <instance-name-or-id> -c properties
+```
+*Expected Output:*
+```text
+| properties   | auto_start='True' |
 ```
 
 ---
@@ -286,5 +324,4 @@ source /opt/venv-kolla/bin/activate
 By combining **Solution 1** (Nova Config) and **Solution 2** (Libvirt Flag), your OpenStack single-node environment will behave like a robust cloud platform, automatically recovering your instances after any planned or unplanned reboot.
 
 ---
-
 
