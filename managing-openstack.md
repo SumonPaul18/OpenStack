@@ -302,7 +302,7 @@ Install and Use Screen in Linux
 nano /etc/nova/nova.conf
 ```
 Add below line under the **[DEFAULT]** section: <br>
-By Default we find **#resume_guests_state_on_host_boot = false**  (So, we need to make it Uncomment and give vaule **True**).
+By Default we find <b>#resume_guests_state_on_host_boot = false </b>  (So, we need to make it Uncomment and give vaule **True**).
 ```
 resume_guests_state_on_host_boot = true
 ```
