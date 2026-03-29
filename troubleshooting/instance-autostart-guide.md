@@ -4,7 +4,7 @@
 1. [Introduction](#1-introduction)
 2. [Prerequisites](#2-prerequisites)
 3. [Solution 1: Enable Nova Service Auto-Start (Recommended)](#3-solution-1-enable-nova-service-auto-start-recommended)
-4. [Solution 2: Configure Instance Boot Policy via CLI](#4-solution-2-configure-instance-boot-policy-via-cli)
+4. [Solution 2: Configure Instance Boot Policy via CLI](#4-solution-2-enable-libvirt-autostart-flag-crucial)
 5. [Solution 3: Verify Libvirt Configuration](#5-solution-3-verify-libvirt-configuration)
 6. [Testing the Setup](#6-testing-the-setup)
 7. [Troubleshooting](#7-troubleshooting)
