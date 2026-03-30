@@ -2,6 +2,7 @@
 ### Real-World Implementation for Single-Node Kolla-Ansible + 3-Node Ceph Cluster
 #### Reference:
 - [github.com/filip-lebiecki/ceph](https://github.com/filip-lebiecki/ceph)
+-[github.com/hojat-gazestani/openstack/](https://github.com/hojat-gazestani/openstack/tree/main/Ceph/first)
 
 > **Infrastructure Context**
 > - **OpenStack Node (All-in-One Kolla-Ansible)**: `192.168.68.69`
