@@ -82,6 +82,13 @@ ceph osd pool create volumes 32 32
 ceph osd pool create backups 32 32
 ceph osd pool create vms 32 32
 ```
+#### Enable the 'rbd' (RADOS Block Device) application on each pool.
+```
+ceph osd pool application enable volumes rbd
+ceph osd pool application enable images rbd
+ceph osd pool application enable vms rbd
+ceph osd pool application enable backups rbd
+```
 #### Initialize pools for RBD usage (mandatory step for newer Ceph versions)
 ```
 rbd pool init images
