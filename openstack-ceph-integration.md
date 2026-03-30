@@ -151,6 +151,18 @@ ceph config generate-minimal-conf > /tmp/ceph.conf
 ```
 sed -i 's/^\t/    /g' /tmp/ceph.conf
 ```
+```
+ceph auth get client.cinder -o /tmp/ceph.client.cinder.keyring
+ceph auth get client.glance -o /tmp/ceph.client.glance.keyring
+ceph auth get client.nova -o /tmp/ceph.client.nova.keyring
+ceph auth get client.cinder-backup -o /tmp/ceph.client.cinder-backup.keyring
+
+```
+#### Verifying keyring files
+```
+ls /tmp/
+cat /tmp/ceph.client.cinder.keyring
+```
 #### Export keyrings
 ```
 ceph auth get-key client.glance > /tmp/ceph.client.glance.keyring
