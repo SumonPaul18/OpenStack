@@ -237,11 +237,17 @@ ceph_glance_user: "glance"
 ceph_glance_pool_name: "images"
 
 # === Cinder Ceph Backend ===
+# Must be need to disable `enable_cinder_backend_lvm`
+#enable_cinder_backend_lvm: "no" 
 cinder_backend_ceph: "yes"
 ceph_cinder_user: "cinder"
 ceph_cinder_pool_name: "volumes"
+#ceph_cinder_backup_user: "cinder" no sure
 ceph_cinder_backup_user: "cinder-backup"
 ceph_cinder_backup_pool_name: "backups"
+enable_cinder_backup: "yes"
+cinder_backup_driver: "ceph"
+
 
 # === Nova Ceph Backend (for ephemeral disks) ===
 nova_backend_ceph: "yes"
@@ -250,9 +256,9 @@ ceph_nova_pool_name: "vms"
 
 # === Optional: Enable copy-on-write cloning in Glance ===
 # Note: Only enable if your Glance API endpoint is not publicly exposed
-glance_api_extra_config: |
-  [DEFAULT]
-  show_image_direct_url = True
+#glance_api_extra_config: |
+#  [DEFAULT]
+#  show_image_direct_url = True
 ```
 
 > 🔐 **Security Note**: `show_image_direct_url = True` exposes backend URLs via Glance API. Only enable this if your Glance endpoint is behind authentication/firewall.
@@ -279,23 +285,31 @@ Now apply the configuration. Kolla will inject the Ceph configs into containers 
 
 #### Validate configuration first (always do this!)
 ```
-kolla-ansible -i /etc/kolla/inventory prechecks
+kolla-ansible prechecks -i all-in-one
 ```
 #### Bootstrap servers if not done already
 ```
-kolla-ansible -i /etc/kolla/inventory bootstrap-servers
-```
-#### Deploy/reconfigure OpenStack with new Ceph settings
-```
-kolla-ansible -i /etc/kolla/inventory deploy
+kolla-ansible bootstrap-servers -i all-in-one
 ```
 #### If only updating config (not full redeploy), use:
 ```
-kolla-ansible -i /etc/kolla/inventory reconfigure
+kolla-ansible reconfigure -i all-in-one 
 ```
+#### Deploy/reconfigure OpenStack with new Ceph settings
+```
+kolla-ansible deploy -i all-in-one 
+```
+
 
 > ⏱️ **Expect Downtime**: Services like `cinder-volume` and `glance-api` will restart. Plan for a brief maintenance window.
 
+### 3.5 Verify Services
+Check if services are up and storage works.
+
+```bash
+openstack volume service list
+```
+> **Action:** Check Cinder service status (Should be `UP`).
 ---
 
 ## 4. Service-by-Service Integration: Glance, Cinder, Nova
@@ -317,6 +331,12 @@ openstack image create "cirros-ceph-test" \
   --container-format bare \
   --public
 ```
+#### Verify image list
+```bash
+openstack image list
+```
+> **Action:** Confirm image exists.
+
 #### Verify image is stored in Ceph
 #### First, get the image ID
 ```
