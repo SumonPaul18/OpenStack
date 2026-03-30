@@ -149,7 +149,7 @@ sed -i 's/^\t/    /g' /tmp/ceph.conf
 ceph auth get-key client.glance > /tmp/ceph.client.glance.keyring
 ceph auth get-key client.cinder > /tmp/ceph.client.cinder.keyring
 ceph auth get-key client.cinder-backup > /tmp/ceph.client.cinder-backup.keyring
-ceph auth get-key client.nova > /tmp/ceph.client.nova.keyring  # if using nova backend
+ceph auth get-key client.nova > /tmp/ceph.client.nova.keyring
 ```
 #### Copy files to OpenStack node (192.168.68.69)
 ```
