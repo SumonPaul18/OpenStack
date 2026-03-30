@@ -151,6 +151,7 @@ ceph config generate-minimal-conf > /tmp/ceph.conf
 ```
 sed -i 's/^\t/    /g' /tmp/ceph.conf
 ```
+#### Export keyrings
 ```
 ceph auth get client.cinder -o /tmp/ceph.client.cinder.keyring
 ceph auth get client.glance -o /tmp/ceph.client.glance.keyring
@@ -198,6 +199,10 @@ sudo mkdir -p /etc/kolla/config/glance
 sudo mkdir -p /etc/kolla/config/cinder/cinder-volume
 sudo mkdir -p /etc/kolla/config/cinder/cinder-backup
 sudo mkdir -p /etc/kolla/config/nova
+```
+```
+####  Check folder structure
+tree /etc/kolla/config/
 ```
 #### Copy the sanitized ceph.conf and keyrings from /tmp/ to appropriate locations
 ```
