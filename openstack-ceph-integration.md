@@ -151,6 +151,19 @@ ceph config generate-minimal-conf > /tmp/ceph.conf
 ```
 sed -i 's/^\t/    /g' /tmp/ceph.conf
 ```
+Ensure configuration files use spaces instead of tabs to prevent parsing errors.
+
+```bash
+sed -i 's/\t/  /g' /etc/kolla/config/glance/ceph.conf
+```
+*Replaces tab characters with two spaces in the Glance `ceph.conf` file.*
+
+```bash
+cat -A /etc/kolla/config/glance/ceph.conf
+```
+*Displays the file content with special characters visible to verify formatting.*
+
+
 #### Export keyrings
 ```
 ceph auth get client.cinder -o /tmp/ceph.client.cinder.keyring
