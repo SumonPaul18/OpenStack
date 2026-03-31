@@ -1,8 +1,6 @@
 # Practical Guide: Integrating Ceph Storage with OpenStack via Kolla-Ansible
 ### Real-World Implementation for Single-Node Kolla-Ansible + 3-Node Ceph Cluster
-#### Reference:
-- [github.com/filip-lebiecki/ceph](https://github.com/filip-lebiecki/ceph)
--[github.com/hojat-gazestani/openstack/](https://github.com/hojat-gazestani/openstack/tree/main/Ceph/first)
+
 
 > **Infrastructure Context**
 > - **OpenStack Node (All-in-One Kolla-Ansible)**: `192.168.68.69`
@@ -216,8 +214,8 @@ sudo mkdir -p /etc/kolla/config/cinder/cinder-volume
 sudo mkdir -p /etc/kolla/config/cinder/cinder-backup
 sudo mkdir -p /etc/kolla/config/nova
 ```
-```
 ####  Check folder structure
+```
 tree /etc/kolla/config/
 ```
 #### Copy the sanitized ceph.conf and keyrings from /tmp/ to appropriate locations
@@ -339,6 +337,21 @@ After deployment, verify Glance can write to Ceph.
 source /etc/kolla/admin-openrc.sh
 ```
 #### Create a test image in RAW format (QCOW2 not recommended for Ceph)
+
+#### Download a new Cirros image.
+```
+wget https://download.cirros-cloud.net/0.6.3/cirros-0.6.3-x86_64-disk.img
+```
+#### Ceph works best with RAW images. Convert the qcow2 image to raw format.
+```
+qemu-img convert -f qcow2 -O raw cirros-0.6.3-x86_64-disk.img cirros.raw
+file cirros.raw
+```
+#### Upload the RAW image to Glance.
+```
+openstack image create cirros --file cirros.raw --disk-format raw --container-format bare --public
+```
+#### Download Cloud images & Upload of singel command
 ```
 wget https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
 openstack image create "cirros-ceph-test" \
@@ -388,8 +401,11 @@ openstack volume show test-ceph-volume
 rbd -p volumes ls
 ```
 #### Should see an RBD image named like volume-<uuid>
-
-
+#### Get information about the RBD volume. Note that it has a parent, which is the image it was cloned from.
+#### Replace the UUID with your volume's UUID.
+```
+rbd info volumes/your volume UUID
+```
 ### 4.3 Nova: Boot Instances with Ceph-Backed Disks
 Test both ephemeral disk and boot-from-volume scenarios.
 
@@ -695,6 +711,8 @@ When all parts are aligned, you get smooth acceleration: fast volume provisionin
 *This guide follows official documentation from:*  
 - [Kolla-Ansible External Ceph Guide (2025.2)](https://docs.openstack.org/kolla-ansible/2025.2/reference/storage/external-ceph-guide.html)  
 - [Ceph RBD with OpenStack](https://docs.ceph.com/en/latest/rbd/rbd-openstack/)  
+- [github.com/filip-lebiecki/ceph](https://github.com/filip-lebiecki/ceph)
+- [github.com/hojat-gazestani/openstack/](https://github.com/hojat-gazestani/openstack/tree/main/Ceph/first)
 
 *Last verified against: Ceph Squid (19.2.x), OpenStack 2025.2 (Caracal), Kolla-Ansible 2025.2*  
 *Infrastructure tested: Single-node Kolla-Ansible + 3-node Ceph cluster (as per user specs)*  
